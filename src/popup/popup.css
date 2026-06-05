@@ -1,0 +1,152 @@
+/**
+ * popup/popup.css
+ * Styles for the extension popup window.
+ * The popup is a small 280px wide window shown when clicking the toolbar icon.
+ */
+
+/* ─── Reset & Base ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #ffffff;
+  color: #0f0f0f;
+  width: 280px;
+  min-height: 160px;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #212121;
+    color: #f1f1f1;
+  }
+}
+
+/* ─── Popup Layout ───────────────────────────────────────────────────── */
+.popup {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────── */
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #ff0000;
+  color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .popup-header {
+    border-bottom-color: #3d3d3d;
+  }
+}
+
+.popup-yt-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.popup-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Body ───────────────────────────────────────────────────────────── */
+.popup-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-status {
+  font-size: 13px;
+  color: #606060;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.popup-status--active {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.popup-status--inactive {
+  color: #606060;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .popup-status { color: #aaaaaa; }
+  .popup-status--inactive { color: #aaaaaa; }
+}
+
+.popup-btn {
+  width: 100%;
+  padding: 9px 16px;
+  background: #ff0000;
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.popup-btn:hover {
+  background: #cc0000;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────── */
+.popup-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid #e0e0e0;
+  font-size: 11px;
+  color: #606060;
+  flex-wrap: wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .popup-footer {
+    border-top-color: #3d3d3d;
+    color: #aaaaaa;
+  }
+}
+
+.popup-footer kbd {
+  background: #f2f2f2;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  color: #0f0f0f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .popup-footer kbd {
+    background: #2d2d2d;
+    border-color: #3d3d3d;
+    color: #f1f1f1;
+  }
+}
+
+.popup-mac-hint {
+  opacity: 0.6;
+}

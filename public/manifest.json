@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Comment Search",
+  "version": "1.0.0",
+  "description": "Search YouTube comments in real time — highlight, filter, and jump to matching comments instantly.",
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "YouTube Comment Search"
+  },
+
+  "background": {
+    "service_worker": "background/index.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch*"],
+      "js": ["content/index.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["chunks/*", "assets/*", "popup/*"],
+      "matches": ["https://www.youtube.com/*"]
+    }
+  ],
+
+  "commands": {
+    "toggle-search": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
+      },
+      "description": "Toggle YouTube Comment Search panel"
+    }
+  }
+}
