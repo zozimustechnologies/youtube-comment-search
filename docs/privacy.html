@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — YouTube Comment Search</title>
+  <meta name="description" content="Privacy policy for the YouTube Comment Search Microsoft Edge extension." />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://raw.githubusercontent.com/zozimustechnologies/youtube-comment-search/main/public/icons/icon-16.png" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .policy-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+    .policy-wrap h1 {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 800;
+      color: var(--text-bright);
+      margin-bottom: 8px;
+    }
+    .policy-wrap .meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 48px;
+    }
+    .policy-wrap h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin: 36px 0 10px;
+    }
+    .policy-wrap p,
+    .policy-wrap li {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.75;
+    }
+    .policy-wrap ul {
+      padding-left: 1.4rem;
+      margin-top: 8px;
+    }
+    .policy-wrap ul li { margin-bottom: 6px; }
+    .policy-wrap a { color: var(--accent-light); }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--text-bright); text-decoration: none; }
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 36px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="policy-wrap">
+    <a href="index.html" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to home
+    </a>
+
+    <h1>Privacy Policy</h1>
+    <p class="meta">Last updated: June 2026 &nbsp;·&nbsp; YouTube Comment Search by Zozimus Technologies</p>
+
+    <p>This Privacy Policy explains how the <strong>YouTube Comment Search</strong> Microsoft Edge extension ("the Extension") handles your data. We are committed to full transparency: the Extension collects no personal data and sends nothing to any external server.</p>
+
+    <h2>1. Data Collection</h2>
+    <p>The Extension does <strong>not</strong> collect, store, transmit, or share any personal information. Specifically:</p>
+    <ul>
+      <li>No account or sign-in is required.</li>
+      <li>No analytics, telemetry, or crash reporting is sent anywhere.</li>
+      <li>No cookies are set by the Extension.</li>
+      <li>No browsing history or watch history is recorded.</li>
+    </ul>
+
+    <h2>2. How the Extension Works</h2>
+    <p>The Extension operates entirely within your browser:</p>
+    <ul>
+      <li>It reads comment text already rendered on the YouTube page you are viewing.</li>
+      <li>All search, filtering, and TF-IDF analysis runs locally in your browser tab.</li>
+      <li>Comment text is never sent to a server and is discarded when you close the panel or navigate away.</li>
+    </ul>
+
+    <h2>3. Permissions</h2>
+    <p>The Extension requests the following browser permissions:</p>
+    <ul>
+      <li><strong>activeTab</strong> — used solely to identify the active YouTube tab when the keyboard shortcut is pressed. No tab data is stored or transmitted.</li>
+      <li><strong>Host permission (youtube.com)</strong> — required to inject the search panel UI into YouTube watch pages. The Extension only activates on <code>https://www.youtube.com/watch*</code> URLs.</li>
+    </ul>
+
+    <h2>4. Third-Party Services</h2>
+    <p>The Extension does not communicate with any third-party service. It does not embed advertising networks, analytics platforms, or external APIs of any kind.</p>
+
+    <h2>5. Children's Privacy</h2>
+    <p>The Extension does not collect data from anyone, including children under 13. No special measures are required because no data is collected at all.</p>
+
+    <h2>6. Changes to This Policy</h2>
+    <p>If this policy changes, the updated version will be published at this URL. The "Last updated" date at the top will reflect the revision date.</p>
+
+    <h2>7. Contact</h2>
+    <p>Questions about this policy? Contact us at <a href="mailto:zozimustechnologies@outlook.com">zozimustechnologies@outlook.com</a>.</p>
+
+    <hr />
+
+    <p style="font-size:0.85rem;color:var(--text-muted);">
+      &copy; 2026 <a href="https://zozimustechnologies.github.io" target="_blank" rel="noopener">Zozimus Technologies</a>. All rights reserved.
+    </p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
