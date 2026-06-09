@@ -2,6 +2,8 @@
 
 > A Microsoft Edge extension that brings instant, in-page comment search to YouTube.
 
+**Website:** [zozimustechnologies.github.io/youtube-comment-search](https://zozimustechnologies.github.io/youtube-comment-search/)
+
 ---
 
 ## Features
