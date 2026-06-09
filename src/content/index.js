@@ -115,9 +115,18 @@ observeNavigation(() => {
   removePanel();
 });
 
-// ── Message from popup button or keyboard shortcut ─────────────────────
+// ── Message from popup button or keyboard shortcut (via background) ────
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'TOGGLE_SEARCH') {
+    togglePanel();
+  }
+});
+
+// ── Direct keyboard listener — bypasses service worker message relay ───
+// Catches Ctrl+Shift+F (Windows/Linux) and Command+Shift+F (Mac)
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault();
     togglePanel();
   }
 });
