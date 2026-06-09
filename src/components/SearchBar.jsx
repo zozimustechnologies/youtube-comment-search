@@ -39,7 +39,7 @@ export default function SearchBar({ query, onQueryChange, isLoading, matchCount,
         ref={inputRef}
         type="text"
         className="ycs-input"
-        placeholder="Search comments…"
+        placeholder="Search comments or usernames…"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         aria-label="Search comments"

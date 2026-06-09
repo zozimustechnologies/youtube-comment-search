@@ -59,7 +59,10 @@ export default function SearchPanel({ onClose }) {
 
   // Filtered results
   const filtered = comments.filter((c) => {
-    const matchesQuery = !query || c.text.toLowerCase().includes(query.toLowerCase());
+    const q = query.toLowerCase();
+    const matchesQuery = !query ||
+      c.text.toLowerCase().includes(q) ||
+      c.author.toLowerCase().includes(q);
     const matchesCreator = !creatorOnly || c.isCreator;
     return matchesQuery && matchesCreator;
   });
