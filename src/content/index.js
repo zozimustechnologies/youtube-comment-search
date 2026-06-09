@@ -1,126 +1,125 @@
 /**
  * content/index.js
- * Entry point for the content script injected into YouTube watch pages.
+ * Content script injected into YouTube watch pages.
  *
- * Responsibilities:
- *  1. Wait for the YouTube comments section to appear in the DOM
- *  2. Create a React root and inject our SearchPanel above the comments
- *  3. Handle YouTube's SPA navigation (re-inject on new video loads)
- *  4. Listen for keyboard shortcut toggle messages from the background worker
+ * The search panel is NOT shown automatically — it is injected and revealed
+ * only when the user presses the toolbar button or keyboard shortcut.
+ * Subsequent toggles simply show/hide the already-injected panel via CSS.
  */
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import SearchPanel from '../components/SearchPanel.jsx';
 import { observeNavigation } from '../utils/domObserver.js';
-
-// Import the panel CSS
 import '../styles/panel.css';
 
-// The ID for our injected container so we never inject twice
 const CONTAINER_ID = 'ycs-root-container';
 
-// Selector for the element we inject our panel before
-const COMMENTS_ANCHOR = 'ytd-comments#comments';
+// Selectors tried in order to find where to insert the panel
+const COMMENT_ANCHORS = [
+  'ytd-comments#comments',
+  '#comments',
+  'ytd-item-section-renderer#sections',
+];
 
-// Holds the React root so we can unmount it cleanly
 let reactRoot = null;
-let isVisible = true;
+
+// ── Helpers ────────────────────────────────────────────────────────────
+
+function findAnchor() {
+  for (const sel of COMMENT_ANCHORS) {
+    const el = document.querySelector(sel);
+    if (el && el.parentNode) return el;
+  }
+  return null;
+}
+
+function getContainer() {
+  return document.getElementById(CONTAINER_ID);
+}
 
 /**
- * Injects the React search panel into the YouTube page.
- * If already injected, does nothing.
+ * Injects the panel container into the YouTube DOM and mounts React.
+ * Returns the container element, or null if the anchor isn't ready yet.
  */
-function injectPanel() {
-  // Don't inject on non-watch pages
-  if (!location.href.includes('youtube.com/watch')) return;
+function mountPanel() {
+  // Already mounted
+  if (getContainer()) return getContainer();
 
-  // Remove any stale container from a previous navigation
-  const existing = document.getElementById(CONTAINER_ID);
-  if (existing) return; // Already injected for this page
+  const anchor = findAnchor();
+  if (!anchor) return null;
 
-  // Find the comments section
-  const commentsSection = document.querySelector(COMMENTS_ANCHOR);
-  if (!commentsSection) {
-    // Comments section not rendered yet — retry shortly
-    setTimeout(injectPanel, 800);
+  const container = document.createElement('div');
+  container.id = CONTAINER_ID;
+  // Start hidden — toggle will reveal it
+  container.style.display = 'none';
+
+  anchor.parentNode.insertBefore(container, anchor);
+
+  reactRoot = createRoot(container);
+  reactRoot.render(
+    React.createElement(SearchPanel, {
+      onClose: () => {
+        container.style.display = 'none';
+      },
+    })
+  );
+
+  return container;
+}
+
+/**
+ * Shows the panel. If not yet injected, tries to inject first.
+ * If the anchor isn't ready, polls every 600ms for up to 20 seconds.
+ */
+function showPanel(attempt = 0) {
+  const container = mountPanel();
+
+  if (container) {
+    container.style.display = '';   // Show
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     return;
   }
 
-  // Create our mount point div
-  const container = document.createElement('div');
-  container.id = CONTAINER_ID;
-
-  // Insert our container right before the comments section
-  commentsSection.parentNode.insertBefore(container, commentsSection);
-
-  // Mount the React app
-  isVisible = true;
-  reactRoot = createRoot(container);
-  renderPanel();
-}
-
-/**
- * (Re-)renders the SearchPanel into the existing React root.
- * Called on mount and when toggling visibility.
- */
-function renderPanel() {
-  if (!reactRoot) return;
-
-  if (isVisible) {
-    reactRoot.render(
-      React.createElement(SearchPanel, {
-        onClose: () => {
-          isVisible = false;
-          renderPanel(); // Re-render as null to hide
-        },
-      })
-    );
-  } else {
-    // Render nothing (hides the panel without removing the container)
-    reactRoot.render(null);
+  // Anchor not ready yet — retry
+  if (attempt < 33) {
+    setTimeout(() => showPanel(attempt + 1), 600);
   }
 }
 
-/**
- * Removes the injected panel and unmounts React.
- * Called when navigating away from a watch page.
- */
+function togglePanel() {
+  const container = getContainer();
+  if (!container) {
+    // Panel hasn't been injected yet — inject and show it
+    showPanel();
+    return;
+  }
+  // Already injected — flip visibility
+  if (container.style.display === 'none') {
+    container.style.display = '';
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    container.style.display = 'none';
+  }
+}
+
 function removePanel() {
-  const container = document.getElementById(CONTAINER_ID);
+  const container = getContainer();
   if (container) {
-    if (reactRoot) {
-      reactRoot.unmount();
-      reactRoot = null;
-    }
+    if (reactRoot) { reactRoot.unmount(); reactRoot = null; }
     container.remove();
   }
 }
 
-// ── Initial injection ──────────────────────────────────────────────────
-// YouTube is a SPA — the page doesn't fully reload between videos.
-// We poll briefly on first load, then rely on navigation observation.
-if (location.href.includes('youtube.com/watch')) {
-  injectPanel();
-}
-
-// ── SPA navigation support ─────────────────────────────────────────────
+// ── SPA navigation: clean up on every new video ────────────────────────
 observeNavigation(() => {
-  // A new video page has loaded — remove old panel and inject fresh
   removePanel();
-  setTimeout(injectPanel, 1000); // Wait for YouTube to render new page content
 });
 
-// ── Message listener for keyboard shortcut toggle ──────────────────────
+// ── Message from popup button or keyboard shortcut ─────────────────────
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'TOGGLE_SEARCH') {
-    const container = document.getElementById(CONTAINER_ID);
-    if (!container) {
-      // Panel was removed — re-inject it
-      injectPanel();
-    } else {
-      // Toggle visibility
-      isVisible = !isVisible;
-      renderPanel();
-    }
+    togglePanel();
   }
 });
+
+

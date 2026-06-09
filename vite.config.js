@@ -49,16 +49,14 @@ export default defineConfig({
       input: {
         // Popup HTML page (Vite builds this as a full HTML bundle)
         popup: resolve(__dirname, 'src/popup/index.html'),
-        // Content script entry
-        content: resolve(__dirname, 'src/content/index.js'),
-        // Background service worker entry
+        // Background service worker (no React, no shared chunks needed)
         background: resolve(__dirname, 'src/background/index.js'),
+        // NOTE: content script is built separately via vite.content.config.js
+        // as a self-contained IIFE — content scripts can't use ES module imports
       },
 
       output: {
-        // Predictable names that match manifest.json references
         entryFileNames: (chunk) => {
-          if (chunk.name === 'content') return 'content/index.js';
           if (chunk.name === 'background') return 'background/index.js';
           return 'popup/[name]-[hash].js';
         },
