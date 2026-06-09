@@ -73,6 +73,12 @@ export default function SearchPanel({ onClose }) {
 
   // ── Summarise All ────────────────────────────────────────────────────
   async function handleSummariseAll() {
+    // Toggle: if already showing, close it
+    if (summaryStatus === 'done' || summaryStatus === 'error') {
+      setSummaryStatus('idle');
+      return;
+    }
+
     if (comments.length === 0) return;
 
     setSummaryText('');
@@ -80,6 +86,9 @@ export default function SearchPanel({ onClose }) {
     setSummaryProgress(0);
     setSummarisedCount(0);
     setSummaryStatus('loading');
+
+    // Yield to React so the loading spinner renders before synchronous scoring runs
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     try {
       const result = await summarizeAll(comments);

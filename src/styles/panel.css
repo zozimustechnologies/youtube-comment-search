@@ -381,6 +381,10 @@ html[dark] {
   cursor: not-allowed;
 }
 
+.ycs-ai-btn--open {
+  background: linear-gradient(135deg, #5b21b6, #7c3aed) !important;
+}
+
 /* Inline spinner (tiny, used inside buttons) */
 .ycs-spinner-inline {
   width: 11px;

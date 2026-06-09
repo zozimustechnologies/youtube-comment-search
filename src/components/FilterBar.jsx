@@ -25,7 +25,8 @@ export default function FilterBar({
   const showAiButton = aiAvailability === 'available' || aiAvailability === 'downloadable';
   const aibusy = summaryStatus === 'downloading' || summaryStatus === 'loading';
 
-  const aiTitle = 'Show the most representative comments (ranked by relevance)';
+  const isOpen = summaryStatus === 'done' || summaryStatus === 'error';
+  const aiTitle = isOpen ? 'Close top comments' : 'Show the most representative comments (ranked by relevance)';
 
   return (
     <div className="ycs-filter-bar">
@@ -52,10 +53,11 @@ export default function FilterBar({
 
         {showAiButton && (
           <button
-            className="ycs-filter-btn ycs-ai-btn"
+            className={`ycs-filter-btn ycs-ai-btn${isOpen ? ' ycs-ai-btn--open' : ''}`}
             onClick={onSummarizeAll}
             disabled={aibusy || totalComments === 0}
             title={aiTitle}
+            aria-pressed={isOpen}
             aria-busy={aibusy}
           >
             {aibusy ? (
@@ -63,6 +65,8 @@ export default function FilterBar({
                 <span className="ycs-spinner ycs-spinner-inline" />
                 Analysing…
               </>
+            ) : isOpen ? (
+              <>✦ Top Comments ✕</>
             ) : (
               <>✦ Top Comments</>
             )}
