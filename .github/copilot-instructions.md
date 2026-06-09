@@ -1,52 +1,101 @@
 # Copilot instructions for youtube-comment-search
 
-Manifest V3 browser extension (Chrome/Edge) that adds in-page comment search, filtering, and AI summarization to YouTube.
+Purpose: Help future Copilot sessions understand how to build, run, and reason about this repository (Microsoft Edge / Chrome extension that adds an in-page comment search UI for YouTube).
 
-## Build & run
+---
 
-```bash
-npm run dev          # Watches both builds (popup/background + content IIFE)
-npm run build        # Production build → dist/
-```
+## Build / run / preview
+- Start development watchers (rebuilds both extension UI and content bundles):
+  npm run dev
+  - This runs two Vite build watchers (default build and the content build via vite.content.config.js). Keep this running while testing in the browser.
 
-Build a single target:
+- Build production artifacts (outputs to dist/):
+  npm run build
 
-```bash
-npx vite build                                    # popup + background
-npx vite build --config vite.content.config.js    # content script (IIFE)
-```
+- Preview the built bundle locally:
+  npm run preview
+  - Serves the built files; manifest.json at repo root references files under dist/.
 
-**Load for testing:** after building, use Chrome/Edge → Extensions → Developer mode → Load unpacked → point to the **repo root** (manifest.json references `dist/*`).
+- Build a single target:
+  - UI / background (default Vite config):
+    npx vite build
+  - Content bundle (content-specific Vite config):
+    npx vite build --config vite.content.config.js
 
-No test or lint scripts exist.
+- Loading the extension for testing:
+  1. Run `npm run dev` (or `npm run build`).
+  2. In Chrome/Edge, open Extensions -> Developer mode -> Load unpacked and point to the repository root (manifest.json at repo root references dist/* assets).
 
-## Architecture
+- Tests / linting:
+  - There are no test or lint scripts present in package.json. No single-test command available.
 
-| Layer | Entry point | Notes |
-|-------|------------|-------|
-| Background service worker | `src/background/index.js` | Handles keyboard commands, relays messages between popup ↔ content |
-| Popup UI | `src/popup/*` | Small React app shown from toolbar icon |
-| Content script (injected panel) | `src/content/index.js` | Built as **IIFE** via `vite.content.config.js` — cannot use ES module imports at runtime |
-| React components | `src/components/*` | SearchPanel, SearchBar, FilterBar, ResultsList, SummaryPanel |
-| Utilities | `src/utils/*` | Comment scraping, DOM observation, highlighting, AI summarization |
+---
 
-**Runtime flow:**
-1. User presses Ctrl+Shift+F (or toolbar button) → background sends `TOGGLE_SEARCH` to active YouTube tab.
-2. Content script mounts a React panel above the comments section.
-3. `commentScraper.js` scrapes comments from the DOM; `domObserver.js` watches for lazily-loaded comments via MutationObserver (debounced 400 ms).
-4. On SPA navigation (detected via `<title>` mutations), the panel is torn down and re-created for the new video.
-5. `aiSummarizer.js` optionally uses the browser's built-in Summarizer API (Gemini Nano, on-device) for comment summaries — no API keys needed.
+## High-level architecture
+- Manifest V3 extension (manifest.json at repo root). Key pieces:
+  - Background service worker: src/background/index.js — handles command shortcuts and message relays between popup and content scripts.
+  - Popup UI: src/popup/* — small React app shown when the user clicks the extension icon.
+  - Injected content UI (search panel): built by the content Vite config and injected as a content script (manifest references dist/content/index.js and dist/content/panel.css).
+  - React components: src/components/* contain the panel, search bar, filters, and results list used by the injected UI.
+  - Utilities: src/utils/* contains the comment scraping, DOM observation, highlighting and scroll helpers.
 
-## Key conventions
+- Runtime behavior overview:
+  - When the search panel is toggled (keyboard command or popup), the content script mounts a React panel into the YouTube page.
+  - Comments are scraped from YouTube's DOM (utils/commentScraper.js) and kept in-memory for fast filtering.
+  - A MutationObserver (utils/domObserver.js) watches for new comments and SPA navigations; scraping is debounced to avoid excessive updates.
+  - Selecting a result scrolls the page to the original comment element (scroll + brief highlight).
 
-- **Two Vite configs:** `vite.config.js` (popup + background, ES modules) and `vite.content.config.js` (content script, IIFE). The content build sets `emptyOutDir: false` so it doesn't wipe the popup build.
-- **Path alias:** `@` → `src/` (configured in vite.config.js resolve.alias).
-- **Manifest paths are fixed:** all compiled assets live under `dist/`. Don't rename output paths without updating both Vite configs and `manifest.json`.
-- **YouTube DOM selectors** (single source of truth in `src/utils/commentScraper.js`):
-  - Comments: `ytd-comment-view-model, ytd-comment-renderer`
-  - Text: `#content-text` | Author: `#author-text`
-  - Creator badge: `ytd-author-comment-badge-renderer` or `#creator-heart-button`
-- **Debounce (400 ms)** on MutationObserver callbacks — preserve this when modifying observation logic.
-- **Content script constraints:** because it runs as IIFE in the page context, it cannot dynamically import chunks. All dependencies (including React) are bundled into the single `dist/content/index.js`.
-- **Messaging protocol:** communication uses `chrome.runtime.sendMessage` / `onMessage` with a `{ type: string }` message shape (e.g., `TOGGLE_SEARCH`, `GET_TAB_INFO`).
-- **AI Summarizer:** the cached `Summarizer` instance in `aiSummarizer.js` must be destroyed on navigation cleanup. Caps input at 200 comments to stay within context window limits.
+---
+
+## Key conventions & patterns (project-specific)
+- Build outputs and manifest paths:
+  - The manifest expects compiled assets under dist/. Do not change the manifest paths without updating the build output or vite configs.
+  - There are two Vite configs in use: the default Vite build and a content-specific Vite config (vite.content.config.js). Use the appropriate config when building one part only.
+
+- Comment scraping selectors & creator detection:
+  - Primary selector: `ytd-comment-view-model, ytd-comment-renderer` (see src/utils/commentScraper.js).
+  - Comment text selector: `#content-text`; author: `#author-text`.
+  - Creator detection uses `ytd-author-comment-badge-renderer` or `#creator-heart-button`. If YouTube changes its DOM, update these selectors here — this is the single source of truth for scraping.
+
+- Observation & debouncing:
+  - observeComments polls for `ytd-comments#comments` and attaches a MutationObserver; callback calls are debounced (400ms) to avoid re-render storms. Keep that debounce when changing observation logic.
+
+- SPA navigation handling:
+  - observeNavigation watches title updates to detect client-side navigation to new videos and triggers a re-scrape when the user navigates within YouTube.
+
+- Keyboard/commands:
+  - Manifest command `toggle-search` (Ctrl+Shift+F / Cmd+Shift+F) is implemented in src/background/index.js and relays TOGGLE_SEARCH messages to the active YouTube tab.
+
+- Minimal runtime assumptions:
+  - Code assumes YouTube uses the DOM structure referenced above and that comments are lazily loaded. Be conservative when changing scraping or scrolling logic.
+
+---
+
+## Where to look first when making changes
+- UI changes: src/components/* and src/popup/*
+- Comment extraction / resilience to DOM changes: src/utils/commentScraper.js and src/utils/domObserver.js
+- Background messaging & commands: src/background/index.js
+- Build behavior: vite.config.js and vite.content.config.js
+
+---
+
+## README integration
+- The repository README contains a short one-line description of the project. This file augments it with build and architecture notes Copilot will need to make accurate edits or generate code.
+
+---
+
+If you want this file adjusted (more detail, add examples, or cover other files), say which areas to expand.
+
+## User instructions:
+** THERE SHOULD NOT BE ANY TRACE OF GOOGLE OR GOOGLE CHROME.
+** there should not be any trace of installing the extension manually, as we will be uploading this to the Edge Add-on Store
+** DO NOT ASSUME EMAILS, WEBSITES, OR ANY CONTACT INFORMATION
+
+Brand Colors :  linear-gradient(135deg, #3d7ea6 0%, #1a4a6e 100%);
+Donate button = Red and links to wise link - https://wise.com/pay/business/sandeepchadda?utm_source=open_link
+Zozimus Technologies Copyright : https://zozimustechnologies.github.io/ The text that should show is: `&copy Zozimus Technologies. All rights reserved.`
+Issue Page: https://github.com/[repo-name]/issues/
+Buttons: Rounded, blue theme (Brand Color)
+Brand Email: zozimustechnologies@outlook.com (DO NOT ASSUME EMAILS, OR ANY CONTACT INFORMATION)
+
+

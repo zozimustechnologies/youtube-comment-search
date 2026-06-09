@@ -61,9 +61,9 @@ export default function SummaryPanel({ status, summary, error, progress, comment
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
           </svg>
-          AI Summary
+          Top Comments
           {commentCount > 0 && status === 'done' && (
-            <span className="ycs-summary-meta">· {commentCount} comments</span>
+            <span className="ycs-summary-meta">· from {commentCount} indexed</span>
           )}
         </span>
         <button className="ycs-close-btn" onClick={onClose} aria-label="Close summary" title="Close">
@@ -74,24 +74,11 @@ export default function SummaryPanel({ status, summary, error, progress, comment
         </button>
       </div>
 
-      {/* Downloading state — model needs to be fetched first */}
-      {status === 'downloading' && (
-        <div className="ycs-summary-body">
-          <p className="ycs-summary-hint">
-            Downloading Gemini Nano model — this is a one-time download (~2 GB).
-          </p>
-          <div className="ycs-progress-track" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-            <div className="ycs-progress-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
-          </div>
-          <span className="ycs-progress-label">{Math.round(progress * 100)}%</span>
-        </div>
-      )}
-
-      {/* Loading state — model is ready, generating */}
+      {/* Loading state — scoring comments */}
       {status === 'loading' && (
         <div className="ycs-summary-body ycs-summary-loading">
-          <span className="ycs-spinner" aria-label="Generating summary…" />
-          <span>Generating summary…</span>
+          <span className="ycs-spinner" aria-label="Analysing comments…" />
+          <span>Analysing comments…</span>
         </div>
       )}
 

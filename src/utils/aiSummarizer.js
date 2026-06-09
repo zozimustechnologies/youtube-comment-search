@@ -1,119 +1,167 @@
 /**
  * utils/aiSummarizer.js
- * Wraps the Chrome/Edge built-in Summarizer API (stable since v138).
- * Runs Gemini Nano fully on-device — no API key, no network after model download.
+ * Extractive summarisation — works on every device, no API key, no download.
  *
- * API global: `Summarizer` (available in content scripts, no manifest permissions needed)
+ * Strategy:
+ *  - summarizeAll: TF-IDF-style word frequency to score each comment,
+ *    pick the top N most representative ones as "key points".
+ *  - summarizeOne: Extract the single most informative sentence from a comment.
+ *
+ * The exported API intentionally mirrors the original Gemini Nano API so
+ * SearchPanel.jsx needs no changes.
  */
 
-// Single cached summarizer instance — creating is expensive (~500ms), so we reuse it
-let summarizerInstance = null;
+// Common English stop-words to ignore when scoring
+const STOP_WORDS = new Set([
+  'a','an','the','and','or','but','in','on','at','to','for','of','with',
+  'is','are','was','were','be','been','being','have','has','had','do','does',
+  'did','will','would','could','should','may','might','i','you','he','she',
+  'it','we','they','this','that','these','those','my','your','his','her',
+  'its','our','their','what','which','who','how','when','where','why',
+  'not','no','so','as','if','by','up','out','about','just','also','get',
+  'got','can','all','more','very','really','like','know','think','make',
+  'made','even','still','some','one','two','time','way','from','than','then',
+]);
 
 /**
- * Checks whether the built-in Summarizer API is available on this device.
- * @returns {Promise<'available' | 'downloadable' | 'unavailable' | 'unsupported'>}
- *   - 'available'    → model is ready to use immediately
- *   - 'downloadable' → supported but model needs to download first (~2 GB, one-time)
- *   - 'unavailable'  → device doesn't meet hardware requirements
- *   - 'unsupported'  → browser doesn't support the API at all
+ * Splits text into lowercase word tokens, stripping punctuation.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function tokenize(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+}
+
+/**
+ * Builds a term-frequency map for a corpus of strings.
+ * Returns a Map<word, docFrequency> (how many docs contain the word).
+ * @param {string[]} docs
+ * @returns {Map<string, number>}
+ */
+function buildDocFrequency(docs) {
+  const df = new Map();
+  for (const doc of docs) {
+    const words = new Set(tokenize(doc));
+    for (const w of words) {
+      df.set(w, (df.get(w) || 0) + 1);
+    }
+  }
+  return df;
+}
+
+/**
+ * Scores a single comment against the corpus using TF-IDF.
+ * Higher score = more representative of the overall discussion.
+ * @param {string} text
+ * @param {Map<string, number>} df
+ * @param {number} totalDocs
+ * @returns {number}
+ */
+function scoreComment(text, df, totalDocs) {
+  const words = tokenize(text);
+  if (words.length === 0) return 0;
+
+  // Count term frequencies in this comment
+  const tf = new Map();
+  for (const w of words) tf.set(w, (tf.get(w) || 0) + 1);
+
+  let score = 0;
+  for (const [word, freq] of tf) {
+    const docFreq = df.get(word) || 1;
+    // TF × IDF: reward words common in this comment but not in every comment
+    const idf = Math.log(totalDocs / docFreq);
+    score += (freq / words.length) * idf;
+  }
+  return score;
+}
+
+// ── Public API ─────────────────────────────────────────────────────────
+
+/**
+ * Always returns 'available' — extractive summary works on every device.
+ * @returns {Promise<'available'>}
  */
 export async function checkAvailability() {
-  if (typeof Summarizer === 'undefined') return 'unsupported';
-  try {
-    const result = await Summarizer.availability();
-    return result; // 'available' | 'downloadable' | 'unavailable'
-  } catch {
-    return 'unsupported';
-  }
+  return 'available';
 }
 
 /**
- * Lazily creates and caches the Summarizer instance.
- * @param {Function} [onProgress] - called with (loaded, total) during model download
- * @returns {Promise<Summarizer>}
- */
-async function getSummarizer(onProgress) {
-  if (summarizerInstance) return summarizerInstance;
-
-  summarizerInstance = await Summarizer.create({
-    // key-points gives a bulleted breakdown — good for "all comments" view
-    type: 'key-points',
-    format: 'markdown',
-    length: 'medium',
-    sharedContext: 'These are comments from a YouTube video.',
-    expectedInputLanguages: ['en'],
-    outputLanguage: 'en',
-    monitor(m) {
-      if (onProgress) {
-        m.addEventListener('downloadprogress', (e) => {
-          onProgress(e.loaded, e.total);
-        });
-      }
-    },
-  });
-
-  return summarizerInstance;
-}
-
-/**
- * Summarizes all comments as a key-points list.
- * Caps at 200 comments to stay within the context window.
+ * Summarises all comments by extracting the top representative ones.
+ * Returns a markdown bullet list of the top comments (as "key points").
  *
  * @param {Array<{text: string, author: string}>} comments
- * @param {Function} [onProgress] - (loaded, total) during model download
- * @returns {Promise<string>} markdown summary
+ * @param {Function} [_onProgress] - ignored (no download needed)
+ * @returns {Promise<string>} markdown bullet list
  */
-export async function summarizeAll(comments, onProgress) {
-  const MAX_COMMENTS = 200;
+export async function summarizeAll(comments, _onProgress) {
+  const MAX_COMMENTS = 300;
+  const TOP_N = 7; // Number of key-point comments to surface
+
   const sample = comments.slice(0, MAX_COMMENTS);
+  if (sample.length === 0) return '- No comments to summarise.';
 
-  // Build a compact text block: "Author: comment text"
-  const text = sample
-    .map((c) => `${c.author}: ${c.text}`)
-    .join('\n');
+  const texts = sample.map((c) => c.text);
+  const df = buildDocFrequency(texts);
+  const total = texts.length;
 
-  const summarizer = await getSummarizer(onProgress);
+  // Score every comment and sort descending
+  const scored = sample
+    .map((c) => ({ comment: c, score: scoreComment(c.text, df, total) }))
+    .sort((a, b) => b.score - a.score);
 
-  return summarizer.summarize(text, {
-    context: `These are the top ${sample.length} comments on a YouTube video. Summarise the key themes, opinions, and sentiment expressed.`,
+  // Take top N, deduplicate very similar ones (same first 40 chars)
+  const seen = new Set();
+  const top = [];
+  for (const { comment } of scored) {
+    const key = comment.text.slice(0, 40).toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      top.push(comment);
+    }
+    if (top.length >= TOP_N) break;
+  }
+
+  // Format as markdown bullet list with author attribution
+  const lines = top.map((c) => {
+    // Truncate very long comments
+    const text = c.text.length > 160 ? c.text.slice(0, 157) + '…' : c.text;
+    return `- **${c.author}**: ${text}`;
   });
+
+  return lines.join('\n');
 }
 
 /**
- * Generates a short TL;DR for a single comment.
- * Creates a temporary one-shot summarizer (not cached) since we want 'tldr' type.
+ * Extracts the most informative sentence from a single comment.
+ * Splits on sentence boundaries and returns the highest-scored sentence.
  *
- * @param {string} text - the comment text
- * @returns {Promise<string>} plain-text tldr
+ * @param {string} text
+ * @returns {Promise<string>}
  */
 export async function summarizeOne(text) {
-  // Single-use summarizer with tldr settings
-  const s = await Summarizer.create({
-    type: 'tldr',
-    format: 'plain-text',
-    length: 'short',
-    sharedContext: 'A single YouTube comment.',
-    expectedInputLanguages: ['en'],
-    outputLanguage: 'en',
-  });
+  // Split into sentences
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 15);
 
-  try {
-    const result = await s.summarize(text, {
-      context: 'Summarise this YouTube comment in one short sentence.',
-    });
-    return result;
-  } finally {
-    s.destroy(); // free resources immediately after single use
-  }
+  if (sentences.length <= 1) return text.slice(0, 160);
+
+  // Score each sentence against the full comment
+  const df = buildDocFrequency([text]);
+  const best = sentences
+    .map((s) => ({ s, score: scoreComment(s, df, 1) }))
+    .sort((a, b) => b.score - a.score)[0];
+
+  return best.s.length > 160 ? best.s.slice(0, 157) + '…' : best.s;
 }
 
 /**
- * Destroys the cached summarizer instance.
- * Call this when the panel is removed (e.g. on SPA navigation).
+ * No-op — no resources to destroy for extractive summarisation.
  */
-export function destroySummarizer() {
-  if (summarizerInstance) {
-    summarizerInstance.destroy();
-    summarizerInstance = null;
-  }
-}
+export function destroySummarizer() {}
+

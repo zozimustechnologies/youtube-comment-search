@@ -68,51 +68,26 @@ export default function SearchPanel({ onClose }) {
     scrollToComment(comment.element);
   }
 
-  // ── AI: Summarise All ────────────────────────────────────────────────
+  // ── Summarise All ────────────────────────────────────────────────────
   async function handleSummariseAll() {
     if (comments.length === 0) return;
 
-    // Reset previous summary
     setSummaryText('');
     setSummaryError('');
     setSummaryProgress(0);
     setSummarisedCount(0);
-
-    // Show downloading state while the model loads (if needed)
-    setSummaryStatus('downloading');
+    setSummaryStatus('loading');
 
     try {
-      const result = await summarizeAll(
-        comments,
-        (loaded, total) => {
-          // onProgress callback: update progress bar
-          setSummaryProgress(total > 0 ? loaded / total : 0);
-          setSummaryStatus('downloading');
-        }
-      );
-
-      // Once summariseAll resolves we may have gone through downloading → now loading
-      setSummaryStatus('loading');
-      setSummarisedCount(Math.min(comments.length, 200));
+      const result = await summarizeAll(comments);
+      setSummarisedCount(Math.min(comments.length, 300));
       setSummaryText(result);
       setSummaryStatus('done');
     } catch (err) {
-      setSummaryError(
-        err?.message?.includes('quota')
-          ? 'Comments are too long to summarise at once. Try filtering first.'
-          : 'Could not generate summary. Make sure your device meets hardware requirements.'
-      );
+      setSummaryError('Could not generate summary. Try again.');
       setSummaryStatus('error');
     }
   }
-
-  // If summarizeAll resolves without firing downloadprogress (model was already ready),
-  // we jump directly to 'loading' — update status accordingly
-  useEffect(() => {
-    if (summaryStatus === 'downloading' && summaryProgress === 0) {
-      // We're waiting; keep showing 'downloading'
-    }
-  }, [summaryStatus, summaryProgress]);
 
   const aiAvailable = aiAvailability === 'available' || aiAvailability === 'downloadable';
 

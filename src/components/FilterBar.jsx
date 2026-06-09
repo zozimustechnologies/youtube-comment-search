@@ -25,9 +25,7 @@ export default function FilterBar({
   const showAiButton = aiAvailability === 'available' || aiAvailability === 'downloadable';
   const aibusy = summaryStatus === 'downloading' || summaryStatus === 'loading';
 
-  const aiTitle = aiAvailability === 'downloadable'
-    ? 'Summarise all comments — Gemini Nano model will download on first use (~2 GB)'
-    : 'Summarise all comments with on-device AI';
+  const aiTitle = 'Show the most representative comments (ranked by relevance)';
 
   return (
     <div className="ycs-filter-bar">
@@ -63,10 +61,10 @@ export default function FilterBar({
             {aibusy ? (
               <>
                 <span className="ycs-spinner ycs-spinner-inline" />
-                {summaryStatus === 'downloading' ? 'Downloading…' : 'Summarising…'}
+                Analysing…
               </>
             ) : (
-              <>✦ Summarise All</>
+              <>✦ Top Comments</>
             )}
           </button>
         )}
