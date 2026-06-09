@@ -1,16 +1,40 @@
-Search YouTube comments in real time — filter by keyword or username, highlight matches, and jump straight to any comment without endless scrolling.
+## Short Description (≤132 characters — paste into Edge Add-on store)
 
-**Features:**
-- Real-time search by keyword or username
-- Author name highlighting
-- Creator filter — isolate replies from the video creator
-- Top Comments — surfaces the most representative comments using TF-IDF analysis
-- Click any result to scroll directly to the comment on the page
-- Keyboard shortcut: Ctrl+Shift+F (Windows/Linux) or Cmd+Shift+F (Mac)
-- Dark and light mode — automatically follows YouTube's theme
-- SPA-aware — re-indexes comments when navigating to a new video
+Search YouTube comments in real time. Filter by keyword or username, highlight matches, and jump to any comment instantly.
 
-All processing is 100% local. No data is sent to any server.
+---
+
+## Full Description (paste into Edge Add-on store)
+
+YouTube Comment Search adds a fast, in-page search panel directly above the YouTube comments section. Open it with Ctrl+Shift+F (or Cmd+Shift+F on Mac), type a keyword or username, and matching comments are highlighted and listed instantly — no page reload required.
+
+**Key Features:**
+
+• Real-time search — results filter as you type, matching comment text and author names simultaneously.
+
+• Author highlighting — matched usernames are highlighted in the results list alongside comment text.
+
+• Creator Filter — one click to isolate replies from the video creator and find official responses fast.
+
+• Top Comments — surfaces the most representative comments from the video using TF-IDF analysis, ranked by relevance. Click the button again to dismiss.
+
+• Jump to comment — click any result to smoothly scroll to that comment on the page. No more hunting.
+
+• Keyboard shortcut — Ctrl+Shift+F (Windows/Linux) or Cmd+Shift+F (Mac) toggles the panel open and closed.
+
+• Dark & light mode — automatically follows YouTube's theme. No configuration needed.
+
+• SPA-aware — automatically re-indexes comments when you navigate to a new video without a full page reload.
+
+**Privacy:**
+
+All processing is 100% local. No data is sent to any external server. No analytics, no cookies, no accounts required. The extension only activates on YouTube watch pages.
+
+**Permissions:**
+
+• activeTab — to detect which YouTube tab is active when the keyboard shortcut is used.
+• Host permission (youtube.com) — to inject the search panel into YouTube watch pages.
 
 **Website:** https://zozimustechnologies.github.io/youtube-comment-search/
 **Source code:** https://github.com/zozimustechnologies/youtube-comment-search
+**Support:** zozimustechnologies@outlook.com
