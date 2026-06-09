@@ -272,21 +272,7 @@ html[dark] {
 }
 
 /* ─── Individual Result ──────────────────────────────────────────────── */
-.ycs-result-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: background 0.12s;
-  font-family: var(--ycs-font);
-}
-
-.ycs-result-item:hover {
-  background: var(--ycs-bg-secondary);
-}
+/* .ycs-result-item and .ycs-result-clickable are defined in the AI section below */
 
 .ycs-result-item.ycs-creator {
   border-left: 3px solid var(--ycs-creator-border);
@@ -374,4 +360,257 @@ html[dark] {
 @keyframes ycs-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* ─── AI: Summarize All button ───────────────────────────────────────── */
+.ycs-ai-btn {
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ycs-ai-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9, #9333ea) !important;
+}
+
+.ycs-ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Inline spinner (tiny, used inside buttons) */
+.ycs-spinner-inline {
+  width: 11px;
+  height: 11px;
+  border-width: 2px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 3px;
+  flex-shrink: 0;
+}
+
+/* ─── AI: Summary Panel ──────────────────────────────────────────────── */
+.ycs-summary-panel {
+  border-bottom: 1px solid var(--ycs-border);
+  background: var(--ycs-bg-secondary);
+  animation: ycs-fade-in 0.2s ease;
+}
+
+.ycs-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 4px;
+}
+
+.ycs-summary-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+html[dark] .ycs-summary-title {
+  color: #c084fc;
+}
+
+.ycs-summary-title svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.ycs-summary-meta {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--ycs-text-muted);
+}
+
+.ycs-summary-body {
+  padding: 4px 16px 12px;
+}
+
+.ycs-summary-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ycs-text-muted);
+  padding-top: 8px;
+}
+
+/* Key-points list from markdown */
+.ycs-summary-list {
+  margin: 4px 0 0 0;
+  padding: 0 0 0 18px;
+  font-size: 13px;
+  color: var(--ycs-text);
+  line-height: 1.6;
+}
+
+.ycs-summary-list li {
+  margin-bottom: 4px;
+}
+
+.ycs-summary-text p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--ycs-text);
+  line-height: 1.6;
+}
+
+/* Download progress bar */
+.ycs-summary-hint {
+  font-size: 12px;
+  color: var(--ycs-text-muted);
+  margin: 4px 0 8px;
+}
+
+.ycs-progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--ycs-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ycs-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.ycs-progress-label {
+  font-size: 11px;
+  color: var(--ycs-text-muted);
+  display: block;
+  margin-top: 4px;
+}
+
+/* Error state */
+.ycs-summary-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #dc2626;
+  padding-top: 4px;
+}
+
+.ycs-summary-error svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+html[dark] .ycs-summary-error {
+  color: #f87171;
+}
+
+/* ─── AI: Per-comment TL;DR ──────────────────────────────────────────── */
+
+/* Result item is now a div (contains button + AI row) */
+.ycs-result-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: var(--ycs-font);
+  transition: background 0.12s;
+}
+
+.ycs-result-item:hover {
+  background: var(--ycs-bg-secondary);
+}
+
+/* The scroll-to clickable area inside the result */
+.ycs-result-clickable {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 16px 6px;
+  cursor: pointer;
+  font-family: var(--ycs-font);
+}
+
+/* AI button row — always visible (not just on hover) */
+.ycs-result-ai-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 16px 8px;
+}
+
+.ycs-tldr-btn {
+  background: none;
+  border: 1px solid #7c3aed;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-family: var(--ycs-font);
+  color: #7c3aed;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ycs-tldr-btn:hover:not(:disabled) {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.ycs-tldr-btn--active {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.ycs-tldr-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+html[dark] .ycs-tldr-btn {
+  border-color: #c084fc;
+  color: #c084fc;
+}
+
+html[dark] .ycs-tldr-btn:hover:not(:disabled),
+html[dark] .ycs-tldr-btn--active {
+  background: #7c3aed;
+  color: #ffffff;
+  border-color: #7c3aed;
+}
+
+.ycs-tldr-error {
+  font-size: 11px;
+  color: #dc2626;
+}
+
+/* Inline TL;DR result box */
+.ycs-tldr-result {
+  margin: 0 16px 10px;
+  padding: 8px 10px;
+  background: var(--ycs-bg);
+  border: 1px solid #a855f7;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ycs-text);
+  line-height: 1.5;
+  animation: ycs-fade-in 0.2s ease;
+}
+
+html[dark] .ycs-tldr-result {
+  border-color: #7c3aed;
 }

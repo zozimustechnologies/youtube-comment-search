@@ -1,6 +1,6 @@
 /**
  * components/FilterBar.jsx
- * Toolbar with filter toggles: "All", "Creator replies only"
+ * Toolbar with filter toggles and the AI "Summarize All" button.
  */
 import React from 'react';
 
@@ -9,8 +9,26 @@ import React from 'react';
  * @param {boolean}  creatorOnly       — whether creator filter is active
  * @param {Function} onCreatorToggle   — toggles creator-only mode
  * @param {number}   totalComments     — total indexed comments count
+ * @param {string}   aiAvailability    — 'available'|'downloadable'|'unavailable'|'unsupported'
+ * @param {string}   summaryStatus     — 'idle'|'downloading'|'loading'|'done'|'error'
+ * @param {Function} onSummarizeAll    — triggered when user clicks Summarize All
  */
-export default function FilterBar({ creatorOnly, onCreatorToggle, totalComments }) {
+export default function FilterBar({
+  creatorOnly,
+  onCreatorToggle,
+  totalComments,
+  aiAvailability,
+  summaryStatus,
+  onSummarizeAll,
+}) {
+  // Don't show the AI button if the device can't run the model
+  const showAiButton = aiAvailability === 'available' || aiAvailability === 'downloadable';
+  const aibusy = summaryStatus === 'downloading' || summaryStatus === 'loading';
+
+  const aiTitle = aiAvailability === 'downloadable'
+    ? 'Summarise all comments — Gemini Nano model will download on first use (~2 GB)'
+    : 'Summarise all comments with on-device AI';
+
   return (
     <div className="ycs-filter-bar">
       <span className="ycs-indexed-count">
@@ -33,6 +51,25 @@ export default function FilterBar({ creatorOnly, onCreatorToggle, totalComments 
         >
           ★ Creator
         </button>
+
+        {showAiButton && (
+          <button
+            className="ycs-filter-btn ycs-ai-btn"
+            onClick={onSummarizeAll}
+            disabled={aibusy || totalComments === 0}
+            title={aiTitle}
+            aria-busy={aibusy}
+          >
+            {aibusy ? (
+              <>
+                <span className="ycs-spinner ycs-spinner-inline" />
+                {summaryStatus === 'downloading' ? 'Downloading…' : 'Summarising…'}
+              </>
+            ) : (
+              <>✦ Summarise All</>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,63 +1,63 @@
 /**
  * components/SearchPanel.jsx
- * The main panel component that orchestrates:
- *   - Comment scraping via MutationObserver
- *   - Search filtering
- *   - Creator filter
- *   - Keyboard shortcuts (Esc to close, Ctrl+F to focus)
+ * Main panel orchestrating search, filters, and AI summaries.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import SearchBar from './SearchBar.jsx';
 import FilterBar from './FilterBar.jsx';
 import ResultsList from './ResultsList.jsx';
+import SummaryPanel from './SummaryPanel.jsx';
 import { scrapeComments, scrollToComment } from '../utils/commentScraper.js';
 import { observeComments } from '../utils/domObserver.js';
+import { checkAvailability, summarizeAll, destroySummarizer } from '../utils/aiSummarizer.js';
 
-/**
- * SearchPanel component
- * @param {Function} onClose — called when the user closes the panel
- */
 export default function SearchPanel({ onClose }) {
   const [query, setQuery] = useState('');
-  const [comments, setComments] = useState([]);   // All indexed comments
+  const [comments, setComments] = useState([]);
   const [creatorOnly, setCreatorOnly] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // True while waiting for first scrape
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Ref to hold the stop function returned by observeComments
+  // AI state
+  const [aiAvailability, setAiAvailability] = useState('unsupported'); // 'available'|'downloadable'|'unavailable'|'unsupported'
+  const [summaryStatus, setSummaryStatus] = useState('idle');          // 'idle'|'downloading'|'loading'|'done'|'error'
+  const [summaryText, setSummaryText] = useState('');
+  const [summaryError, setSummaryError] = useState('');
+  const [summaryProgress, setSummaryProgress] = useState(0);
+  const [summarisedCount, setSummarisedCount] = useState(0);
+
   const stopObservingRef = useRef(null);
 
-  /**
-   * Re-scrape comments from the DOM and update state.
-   * Called by the MutationObserver whenever new comments appear.
-   */
+  // Scrape + index comments whenever YouTube loads new ones
   const refreshComments = useCallback(() => {
     const scraped = scrapeComments();
     setComments(scraped);
     setIsLoading(false);
   }, []);
 
-  // Start observing the comments section on mount, stop on unmount
   useEffect(() => {
     setIsLoading(true);
     stopObservingRef.current = observeComments(refreshComments);
-
     return () => {
       if (stopObservingRef.current) stopObservingRef.current();
+      destroySummarizer(); // free GPU/RAM when panel unmounts
     };
   }, [refreshComments]);
 
-  // Keyboard shortcuts: Esc closes the panel, Ctrl+F focuses the input
+  // Check AI availability once on mount
+  useEffect(() => {
+    checkAvailability().then(setAiAvailability);
+  }, []);
+
+  // Esc key closes the panel
   useEffect(() => {
     function handleKeyDown(e) {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Derive filtered results from all comments
+  // Filtered results
   const filtered = comments.filter((c) => {
     const matchesQuery = !query || c.text.toLowerCase().includes(query.toLowerCase());
     const matchesCreator = !creatorOnly || c.isCreator;
@@ -68,12 +68,59 @@ export default function SearchPanel({ onClose }) {
     scrollToComment(comment.element);
   }
 
+  // ── AI: Summarise All ────────────────────────────────────────────────
+  async function handleSummariseAll() {
+    if (comments.length === 0) return;
+
+    // Reset previous summary
+    setSummaryText('');
+    setSummaryError('');
+    setSummaryProgress(0);
+    setSummarisedCount(0);
+
+    // Show downloading state while the model loads (if needed)
+    setSummaryStatus('downloading');
+
+    try {
+      const result = await summarizeAll(
+        comments,
+        (loaded, total) => {
+          // onProgress callback: update progress bar
+          setSummaryProgress(total > 0 ? loaded / total : 0);
+          setSummaryStatus('downloading');
+        }
+      );
+
+      // Once summariseAll resolves we may have gone through downloading → now loading
+      setSummaryStatus('loading');
+      setSummarisedCount(Math.min(comments.length, 200));
+      setSummaryText(result);
+      setSummaryStatus('done');
+    } catch (err) {
+      setSummaryError(
+        err?.message?.includes('quota')
+          ? 'Comments are too long to summarise at once. Try filtering first.'
+          : 'Could not generate summary. Make sure your device meets hardware requirements.'
+      );
+      setSummaryStatus('error');
+    }
+  }
+
+  // If summarizeAll resolves without firing downloadprogress (model was already ready),
+  // we jump directly to 'loading' — update status accordingly
+  useEffect(() => {
+    if (summaryStatus === 'downloading' && summaryProgress === 0) {
+      // We're waiting; keep showing 'downloading'
+    }
+  }, [summaryStatus, summaryProgress]);
+
+  const aiAvailable = aiAvailability === 'available' || aiAvailability === 'downloadable';
+
   return (
     <div className="ycs-panel" role="dialog" aria-label="YouTube Comment Search">
-      {/* Panel header */}
+      {/* Header */}
       <div className="ycs-header">
         <span className="ycs-logo">
-          {/* Simple YouTube-style play icon */}
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M10 15l5.19-3L10 9v6zm11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z" />
           </svg>
@@ -87,7 +134,6 @@ export default function SearchPanel({ onClose }) {
         </button>
       </div>
 
-      {/* Search input */}
       <SearchBar
         query={query}
         onQueryChange={setQuery}
@@ -96,19 +142,31 @@ export default function SearchPanel({ onClose }) {
         autoFocus
       />
 
-      {/* Filter toggles */}
       <FilterBar
         creatorOnly={creatorOnly}
         onCreatorToggle={() => setCreatorOnly((v) => !v)}
         totalComments={comments.length}
+        aiAvailability={aiAvailability}
+        summaryStatus={summaryStatus}
+        onSummarizeAll={handleSummariseAll}
       />
 
-      {/* Results */}
+      {/* AI Summary section — shown when active */}
+      <SummaryPanel
+        status={summaryStatus}
+        summary={summaryText}
+        error={summaryError}
+        progress={summaryProgress}
+        commentCount={summarisedCount}
+        onClose={() => setSummaryStatus('idle')}
+      />
+
       <ResultsList
         results={filtered}
         query={query}
         isLoading={isLoading}
         onSelect={handleSelect}
+        aiAvailable={aiAvailable}
       />
     </div>
   );
