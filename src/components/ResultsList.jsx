@@ -12,9 +12,8 @@ import CommentResult from './CommentResult.jsx';
  * @param {string}   query         — current search query
  * @param {boolean}  isLoading     — comments still being indexed
  * @param {Function} onSelect      — called with comment when user clicks a result
- * @param {boolean}  aiAvailable   — whether per-comment AI button should show
  */
-export default function ResultsList({ results, query, isLoading, onSelect, aiAvailable }) {
+export default function ResultsList({ results, query, isLoading, onSelect }) {
   // Nothing typed yet
   if (!query) {
     return (
@@ -57,7 +56,6 @@ export default function ResultsList({ results, query, isLoading, onSelect, aiAva
             comment={comment}
             query={query}
             onClick={onSelect}
-            aiAvailable={aiAvailable}
           />
         </li>
       ))}

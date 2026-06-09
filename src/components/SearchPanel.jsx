@@ -144,7 +144,6 @@ export default function SearchPanel({ onClose }) {
         query={query}
         isLoading={isLoading}
         onSelect={handleSelect}
-        aiAvailable={aiAvailable}
       />
     </div>
   );
