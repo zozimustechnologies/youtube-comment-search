@@ -35,9 +35,9 @@ const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" 
 const ICON_DATA = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(ICON_SVG)}`;
 
 // ── Helpers ────────────────────────────────────────────────────────────
-async function snap(page, width, height, filename) {
-  await page.setViewport({ width, height, deviceScaleFactor: 6 });
-  const buf = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width, height } });
+async function snap(page, width, height, filename, scaleFactor = 6, transparent = false) {
+  await page.setViewport({ width, height, deviceScaleFactor: scaleFactor });
+  const buf = await page.screenshot({ type: 'png', omitBackground: transparent, clip: { x: 0, y: 0, width, height } });
   const out = path.join(OUT, filename);
   await writeFile(out, buf);
   console.log(`✓ ${filename}`);
@@ -48,7 +48,7 @@ function logoHtml(size = 1024) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{width:${size}px;height:${size}px;background:${DARK};display:flex;align-items:center;justify-content:center;}
+    body{width:${size}px;height:${size}px;background:transparent;display:flex;align-items:center;justify-content:center;}
     img{width:${Math.round(size*0.72)}px;height:${Math.round(size*0.72)}px;border-radius:${Math.round(size*0.16)}px;box-shadow:0 16px 64px rgba(224,0,0,0.45);}
   </style></head><body>
   <img src="${ICON_DATA}" alt="logo"/>
@@ -224,15 +224,15 @@ const page = await browser.newPage();
 
 // 1. Logo 1024×1024
 await page.setContent(logoHtml(1024), { waitUntil: 'domcontentloaded' });
-await snap(page, 1024, 1024, 'logo-1024x1024.png');
+await snap(page, 1024, 1024, 'logo-1024x1024.png', 6, true);
 
-// 2. Small promotional tile 440×280
+// 2. Small promotional tile 440×280 (exact pixels required by store)
 await page.setContent(promoHtml(440, 280), { waitUntil: 'domcontentloaded' });
-await snap(page, 440, 280, 'promo-small-440x280.png');
+await snap(page, 440, 280, 'promo-small-440x280.png', 1);
 
-// 3. Large promotional tile 1400×560
+// 3. Large promotional tile 1400×560 (exact pixels required by store)
 await page.setContent(promoHtml(1400, 560), { waitUntil: 'domcontentloaded' });
-await snap(page, 1400, 560, 'promo-large-1400x560.png');
+await snap(page, 1400, 560, 'promo-large-1400x560.png', 1);
 
 // 4. Screenshot 1 — search results (1280×800)
 await page.setContent(screenshotHtml(1280, 800, 1), { waitUntil: 'domcontentloaded' });
