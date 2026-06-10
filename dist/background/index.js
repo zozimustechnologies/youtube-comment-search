@@ -1,1 +1,1 @@
-chrome.commands.onCommand.addListener(r=>{r==="toggle-search"&&chrome.tabs.query({active:!0,currentWindow:!0},t=>{const e=t[0];e&&e.url&&e.url.includes("youtube.com/watch")&&chrome.tabs.sendMessage(e.id,{type:"TOGGLE_SEARCH"})})});chrome.runtime.onMessage.addListener((r,t,e)=>{if(r.type==="GET_TAB_INFO")return chrome.tabs.query({active:!0,currentWindow:!0},n=>{e({tab:n[0]})}),!0});
+chrome.runtime.onMessage.addListener((e,n,r)=>{if(e.type==="GET_TAB_INFO")return chrome.tabs.query({active:!0,currentWindow:!0},t=>{r({tab:t[0]})}),!0});

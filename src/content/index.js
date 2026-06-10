@@ -122,13 +122,6 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-// ── Direct keyboard listener — bypasses service worker message relay ───
-// Catches Ctrl+Shift+F (Windows/Linux) and Command+Shift+F (Mac)
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
-    e.preventDefault();
-    togglePanel();
-  }
-});
+
 
 

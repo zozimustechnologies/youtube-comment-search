@@ -117,30 +117,3 @@ body {
 .popup-btn:active {
   transform: translateY(0);
 }
-
-/* ─── Footer ─────────────────────────────────────────────────────────── */
-.popup-footer {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px 12px;
-  border-top: 1px solid #21262d;
-  background: #161b22;
-  font-size: 11px;
-  color: #8b949e;
-  flex-wrap: wrap;
-}
-
-.popup-footer kbd {
-  background: #21262d;
-  border: 1px solid #30363d;
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 11px;
-  font-family: monospace;
-  color: #f0f6fc;
-}
-
-.popup-mac-hint {
-  opacity: 0.6;
-}

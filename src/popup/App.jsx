@@ -68,12 +68,7 @@ export default function PopupApp() {
         )}
       </div>
 
-      {/* Footer shortcut hint */}
-      <div className="popup-footer">
-        <span>Keyboard shortcut:</span>
-        <kbd>Ctrl+Shift+F</kbd>
-        <span className="popup-mac-hint">(⌘⇧F on Mac)</span>
-      </div>
+
     </div>
   );
 }
