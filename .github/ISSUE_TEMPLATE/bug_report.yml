@@ -3,8 +3,6 @@ description: Report something that isn't working as expected
 title: "[Bug] "
 labels:
   - bug
-assignees:
-  - avichadda
 body:
   - type: markdown
     attributes:

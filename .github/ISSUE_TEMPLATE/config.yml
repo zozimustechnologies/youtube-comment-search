@@ -3,3 +3,6 @@ contact_links:
   - name: Support / General Enquiries
     url: mailto:zozimustechnologies@outlook.com
     about: For questions not related to a bug or feature request, email us directly.
+  - name: Our Website
+    url: https://zozimustechnologies.github.io
+    about: Visit our website for more information about our products and services.
