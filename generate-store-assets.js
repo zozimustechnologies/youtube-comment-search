@@ -106,7 +106,7 @@ function promoHtml(width, height) {
 function screenshotHtml(width, height, scene) {
   const scale = width >= 1000 ? 1 : 0.72;
   // At small scale the panel is narrower — use a wider panel and smaller font to keep buttons on one line
-  const panelW = width >= 1000 ? 440 : 520;
+  const panelW = width >= 1000 ? 880 : 520;
 
   if (scene === 1) {
     // Search results view
@@ -234,21 +234,13 @@ await snap(page, 440, 280, 'promo-small-440x280.png', 1);
 await page.setContent(promoHtml(1400, 560), { waitUntil: 'domcontentloaded' });
 await snap(page, 1400, 560, 'promo-large-1400x560.png', 1);
 
-// 4. Screenshot 1 — search results (1280×800)
-await page.setContent(screenshotHtml(1280, 800, 1), { waitUntil: 'domcontentloaded' });
-await snap(page, 1280, 800, 'screenshot-1-1280x800.png');
-
-// 5. Screenshot 2 — Top Comments panel (1280×800)
-await page.setContent(screenshotHtml(1280, 800, 2), { waitUntil: 'domcontentloaded' });
-await snap(page, 1280, 800, 'screenshot-2-1280x800.png');
-
-// 6. Screenshot 1 — small 640×400 (used in docs/)
+// 4. Screenshot 1 — search results (1280×800 @ 2x)
 await page.setContent(screenshotHtml(640, 400, 1), { waitUntil: 'domcontentloaded' });
-await snap(page, 640, 400, 'screenshot-1.png');
+await snap(page, 640, 400, 'screenshot-1.png', 2);
 
-// 7. Screenshot 2 — small 640×400 (used in docs/)
+// 5. Screenshot 2 — Top Comments panel (1280×800 @ 2x)
 await page.setContent(screenshotHtml(640, 400, 2), { waitUntil: 'domcontentloaded' });
-await snap(page, 640, 400, 'screenshot-2.png');
+await snap(page, 640, 400, 'screenshot-2.png', 2);
 
 await browser.close();
 console.log('\nAll assets saved to store-assets/');
