@@ -36,9 +36,7 @@
   ],
 
   "permissions": [
-    "activeTab",
-    "storage",
-    "scripting"
+    "activeTab"
   ],
 
   "host_permissions": [
@@ -47,7 +45,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["chunks/*", "assets/*", "popup/*"],
+      "resources": ["popup/*.js", "popup/*.css", "assets/*"],
       "matches": ["https://www.youtube.com/*"]
     }
   ],

@@ -1,7 +1,7 @@
 /**
  * popup/popup.css
  * Styles for the extension popup window.
- * The popup is a small 280px wide window shown when clicking the toolbar icon.
+ * Matches the website theme: https://zozimustechnologies.github.io/youtube-comment-search
  */
 
 /* ─── Reset & Base ───────────────────────────────────────────────────── */
@@ -12,24 +12,21 @@
 }
 
 body {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #ffffff;
-  color: #0f0f0f;
-  width: 280px;
-  min-height: 160px;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #212121;
-    color: #f1f1f1;
-  }
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  width: 300px;
+  min-height: 180px;
+  padding: 0;
+  margin: 0;
 }
 
 /* ─── Popup Layout ───────────────────────────────────────────────────── */
 .popup {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background: #0d1117;
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────── */
@@ -37,28 +34,37 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px 12px;
-  border-bottom: 1px solid #e0e0e0;
-  background: #ff0000;
-  color: #ffffff;
+  padding: 14px 16px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  position: relative;
+  overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  .popup-header {
-    border-bottom-color: #3d3d3d;
-  }
+.popup-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 0% 50%, rgba(224,0,0,0.18) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .popup-yt-icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
+  color: #e00000;
+  position: relative;
+  z-index: 1;
 }
 
 .popup-title {
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  color: #f0f6fc;
+  letter-spacing: -0.01em;
+  position: relative;
+  z-index: 1;
 }
 
 /* ─── Body ───────────────────────────────────────────────────────────── */
@@ -67,47 +73,49 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: #0d1117;
 }
 
 .popup-status {
-  font-size: 13px;
-  color: #606060;
+  font-size: 12.5px;
+  color: #8b949e;
   text-align: center;
-  padding: 8px 0;
+  padding: 6px 0;
+  line-height: 1.5;
 }
 
 .popup-status--active {
-  color: #4caf50;
+  color: #3fb950;
   font-weight: 500;
 }
 
 .popup-status--inactive {
-  color: #606060;
-  line-height: 1.5;
-}
-
-@media (prefers-color-scheme: dark) {
-  .popup-status { color: #aaaaaa; }
-  .popup-status--inactive { color: #aaaaaa; }
+  color: #8b949e;
+  line-height: 1.6;
 }
 
 .popup-btn {
   width: 100%;
-  padding: 9px 16px;
-  background: #ff0000;
+  padding: 10px 16px;
+  background: #e00000;
   color: #ffffff;
   border: none;
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.1s;
   letter-spacing: 0.01em;
 }
 
 .popup-btn:hover {
-  background: #cc0000;
+  background: #ff3333;
+  transform: translateY(-1px);
+}
+
+.popup-btn:active {
+  transform: translateY(0);
 }
 
 /* ─── Footer ─────────────────────────────────────────────────────────── */
@@ -116,35 +124,21 @@ body {
   align-items: center;
   gap: 6px;
   padding: 10px 16px 12px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #21262d;
+  background: #161b22;
   font-size: 11px;
-  color: #606060;
+  color: #8b949e;
   flex-wrap: wrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  .popup-footer {
-    border-top-color: #3d3d3d;
-    color: #aaaaaa;
-  }
-}
-
 .popup-footer kbd {
-  background: #f2f2f2;
-  border: 1px solid #e0e0e0;
+  background: #21262d;
+  border: 1px solid #30363d;
   border-radius: 4px;
   padding: 1px 6px;
   font-size: 11px;
   font-family: monospace;
-  color: #0f0f0f;
-}
-
-@media (prefers-color-scheme: dark) {
-  .popup-footer kbd {
-    background: #2d2d2d;
-    border-color: #3d3d3d;
-    color: #f1f1f1;
-  }
+  color: #f0f6fc;
 }
 
 .popup-mac-hint {
