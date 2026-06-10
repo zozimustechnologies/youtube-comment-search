@@ -36,7 +36,7 @@ const ICON_DATA = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(ICON_SV
 
 // ── Helpers ────────────────────────────────────────────────────────────
 async function snap(page, width, height, filename) {
-  await page.setViewport({ width, height, deviceScaleFactor: 2 });
+  await page.setViewport({ width, height, deviceScaleFactor: 6 });
   const buf = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width, height } });
   const out = path.join(OUT, filename);
   await writeFile(out, buf);
@@ -44,12 +44,12 @@ async function snap(page, width, height, filename) {
 }
 
 // ── HTML templates ─────────────────────────────────────────────────────
-function logoHtml() {
+function logoHtml(size = 1024) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{width:300px;height:300px;background:${DARK};display:flex;align-items:center;justify-content:center;}
-    img{width:200px;height:200px;border-radius:44px;box-shadow:0 16px 64px rgba(224,0,0,0.45);}
+    body{width:${size}px;height:${size}px;background:${DARK};display:flex;align-items:center;justify-content:center;}
+    img{width:${Math.round(size*0.72)}px;height:${Math.round(size*0.72)}px;border-radius:${Math.round(size*0.16)}px;box-shadow:0 16px 64px rgba(224,0,0,0.45);}
   </style></head><body>
   <img src="${ICON_DATA}" alt="logo"/>
   </body></html>`;
@@ -105,6 +105,8 @@ function promoHtml(width, height) {
 
 function screenshotHtml(width, height, scene) {
   const scale = width >= 1000 ? 1 : 0.72;
+  // At small scale the panel is narrower — use a wider panel and smaller font to keep buttons on one line
+  const panelW = width >= 1000 ? 440 : 520;
 
   if (scene === 1) {
     // Search results view
@@ -127,17 +129,17 @@ function screenshotHtml(width, height, scene) {
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{width:${width}px;height:${height}px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
-      .panel{width:${Math.round(440*scale)}px;background:#1e1e1e;border-radius:12px;border:1px solid ${BORDER};box-shadow:0 24px 80px rgba(0,0,0,0.7);overflow:hidden;}
+      .panel{width:${Math.round(panelW*scale)}px;background:#1e1e1e;border-radius:12px;border:1px solid ${BORDER};box-shadow:0 24px 80px rgba(0,0,0,0.7);overflow:hidden;}
       .header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid ${BORDER};background:#161b22;}
       .brand{display:flex;align-items:center;gap:8px;font-weight:700;color:#f0f6fc;font-size:0.9rem;}
       .brand img{width:20px;height:20px;border-radius:4px;}
       .search-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid ${BORDER};background:#161b22;}
       .search-input{flex:1;background:#0d1117;border:1px solid ${BORDER};border-radius:6px;padding:7px 10px;color:#f0f6fc;font-size:0.85rem;}
-      .match-badge{background:#e00000;color:#fff;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:600;}
-      .filter-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid ${BORDER};}
-      .count{font-size:0.75rem;color:#8b949e;}
-      .filters{display:flex;gap:6px;}
-      .btn-f{padding:4px 10px;border-radius:20px;border:1px solid ${BORDER};background:transparent;color:#8b949e;font-size:0.75rem;cursor:pointer;}
+      .match-badge{background:#e00000;color:#fff;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:600;white-space:nowrap;}
+      .filter-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 80px 8px 14px;border-bottom:1px solid ${BORDER};gap:8px;}
+      .count{font-size:0.72rem;color:#8b949e;flex-shrink:0;}
+      .filters{display:flex;gap:5px;flex-shrink:0;}
+      .btn-f{padding:4px 10px;border-radius:6px;border:1px solid ${BORDER};background:transparent;color:#8b949e;font-size:0.72rem;cursor:pointer;white-space:nowrap;}
       .btn-active{background:#e00000;color:#fff;border-color:#e00000;}
       .btn-ai{background:linear-gradient(135deg,#7c3aed,#9d6cf3);color:#fff;border:none;}
       .results{max-height:${Math.round(280*scale)}px;overflow:hidden;}
@@ -187,7 +189,7 @@ function screenshotHtml(width, height, scene) {
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{width:${width}px;height:${height}px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
-    .panel{width:${Math.round(440*scale)}px;background:#1e1e1e;border-radius:12px;border:1px solid ${BORDER};box-shadow:0 24px 80px rgba(0,0,0,0.7);overflow:hidden;}
+    .panel{width:${Math.round(780*scale)}px;background:#1e1e1e;border-radius:12px;border:1px solid ${BORDER};box-shadow:0 24px 80px rgba(0,0,0,0.7);overflow:hidden;}
     .header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid ${BORDER};background:#161b22;}
     .brand{display:flex;align-items:center;gap:8px;font-weight:700;color:#f0f6fc;font-size:0.9rem;}
     .brand img{width:20px;height:20px;border-radius:4px;}
@@ -220,9 +222,9 @@ function screenshotHtml(width, height, scene) {
 const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
 const page = await browser.newPage();
 
-// 1. Logo 300×300
-await page.setContent(logoHtml(), { waitUntil: 'domcontentloaded' });
-await snap(page, 300, 300, 'logo-300x300.png');
+// 1. Logo 1024×1024
+await page.setContent(logoHtml(1024), { waitUntil: 'domcontentloaded' });
+await snap(page, 1024, 1024, 'logo-1024x1024.png');
 
 // 2. Small promotional tile 440×280
 await page.setContent(promoHtml(440, 280), { waitUntil: 'domcontentloaded' });
