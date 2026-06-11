@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Comment Search",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Search YouTube comments in real time — highlight, filter, and jump to matching comments instantly.",
 
   "icons": {

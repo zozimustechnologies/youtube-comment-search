@@ -1,10 +1,3 @@
-SHORT DESCRIPTION (≤132 characters)
-
-Search YouTube comments in real time. Filter by keyword or username, highlight matches, and jump to any comment instantly.
-
-
-FULL DESCRIPTION
-
 YouTube Comment Search adds a fast, in-page search panel directly above the YouTube comments section. Open it with Ctrl+Shift+F (or Cmd+Shift+F on Mac), type a keyword or username, and matching comments are highlighted and listed instantly — no page reload required.
 
 Key Features:
@@ -18,8 +11,6 @@ Key Features:
 • Top Comments — surfaces the most representative comments from the video using TF-IDF analysis, ranked by relevance. Click the button again to dismiss.
 
 • Jump to comment — click any result to smoothly scroll to that comment on the page. No more hunting.
-
-• Keyboard shortcut — Ctrl+Shift+F (Windows/Linux) or Cmd+Shift+F (Mac) toggles the panel open and closed.
 
 • Dark & light mode — automatically follows YouTube's theme. No configuration needed.
 
