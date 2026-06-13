@@ -15,13 +15,11 @@ let _pendingAuth = null;
 async function getCachedToken() {
   if (_cachedToken && Date.now() < _tokenExpiry) return _cachedToken;
   try {
-    if (chrome.storage?.session) {
-      const stored = await chrome.storage.session.get('ytAuthToken').catch(() => ({}));
-      if (stored?.ytAuthToken?.token && Date.now() < stored.ytAuthToken.expiry) {
-        _cachedToken = stored.ytAuthToken.token;
-        _tokenExpiry = stored.ytAuthToken.expiry;
-        return _cachedToken;
-      }
+    const stored = await chrome.storage.local.get('ytAuthToken').catch(() => ({}));
+    if (stored?.ytAuthToken?.token && Date.now() < stored.ytAuthToken.expiry) {
+      _cachedToken = stored.ytAuthToken.token;
+      _tokenExpiry = stored.ytAuthToken.expiry;
+      return _cachedToken;
     }
   } catch {}
   return null;
@@ -62,9 +60,7 @@ async function getToken() {
     _cachedToken = token;
     _tokenExpiry = Date.now() + TOKEN_TTL_MS;
     _pendingAuth = null;
-    if (chrome.storage?.session) {
-      chrome.storage.session.set({ ytAuthToken: { token, expiry: _tokenExpiry } }).catch(() => {});
-    }
+    chrome.storage.local.set({ ytAuthToken: { token, expiry: _tokenExpiry } }).catch(() => {});
     return token;
   }).catch((err) => {
     _pendingAuth = null;
@@ -161,11 +157,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     _cachedToken = null;
     _tokenExpiry = 0;
     _pendingAuth = null;
-    if (chrome.storage?.session) {
-      chrome.storage.session.remove('ytAuthToken').catch(() => {});
-    }
+    chrome.storage.local.remove('ytAuthToken').catch(() => {});
     sendResponse({ ok: true });
     return true;
   }
 });
-
