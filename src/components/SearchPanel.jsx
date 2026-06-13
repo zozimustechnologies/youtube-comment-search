@@ -7,17 +7,16 @@ import SearchBar from './SearchBar.jsx';
 import FilterBar from './FilterBar.jsx';
 import ResultsList from './ResultsList.jsx';
 import SummaryPanel from './SummaryPanel.jsx';
-import TranscriptPanel from './TranscriptPanel.jsx';
-import { fetchComments, scrollToCommentInDOM } from '../utils/commentScraper.js';
+import { scrapeComments, scrollToComment } from '../utils/commentScraper.js';
+import { observeComments } from '../utils/domObserver.js';
 import { checkAvailability, summarizeAll, destroySummarizer } from '../utils/aiSummarizer.js';
 
 export default function SearchPanel({ onClose }) {
-  const [tab, setTab] = useState('comments'); // 'comments' | 'transcript'
+  const [tab, setTab] = useState('comments');
   const [query, setQuery] = useState('');
   const [comments, setComments] = useState([]);
   const [creatorOnly, setCreatorOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
 
   // AI state
   const [aiAvailability, setAiAvailability] = useState('unsupported'); // 'available'|'downloadable'|'unavailable'|'unsupported'
@@ -29,39 +28,21 @@ export default function SearchPanel({ onClose }) {
 
   const stopObservingRef = useRef(null);
 
-  // Load comments from the YouTube API when the panel opens
+  // Scrape + index comments whenever YouTube loads new ones
+  const refreshComments = useCallback(() => {
+    const scraped = scrapeComments();
+    setComments(scraped);
+    setIsLoading(false);
+  }, []);
+
   useEffect(() => {
-    const videoId = new URLSearchParams(window.location.search).get('v');
-    if (!videoId) {
-      setIsLoading(false);
-      setLoadError('Could not determine the video ID from the URL.');
-      return;
-    }
-
-    let cancelled = false;
     setIsLoading(true);
-    setLoadError('');
-
-    fetchComments(videoId)
-      .then((data) => {
-        if (!cancelled) {
-          setComments(data);
-          setIsLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setLoadError(err.message || 'Failed to load comments.');
-          setIsLoading(false);
-        }
-      });
-
+    stopObservingRef.current = observeComments(refreshComments);
     return () => {
-      cancelled = true;
       if (stopObservingRef.current) stopObservingRef.current();
       destroySummarizer();
     };
-  }, []);
+  }, [refreshComments]);
 
   // Check AI availability once on mount
   useEffect(() => {
@@ -77,27 +58,17 @@ export default function SearchPanel({ onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Filtered results — top-level comments first (matching YouTube's order),
-  // then replies. Without a search query, replies are hidden entirely since
-  // YouTube also hides them by default.
-  const filtered = comments
-    .filter((c) => {
-      const q = query.toLowerCase();
-      const matchesQuery = !query ||
-        c.text.toLowerCase().includes(q) ||
-        c.author.toLowerCase().includes(q);
-      const matchesCreator = !creatorOnly || c.isCreator;
-      const visibleWithoutQuery = query ? true : !c.isReply;
-      return matchesQuery && matchesCreator && visibleWithoutQuery;
-    })
-    .sort((a, b) => {
-      // Top-level comments before replies
-      if (a.isReply !== b.isReply) return a.isReply ? 1 : -1;
-      return 0; // preserve API relevance order within each group
-    });
+  const filtered = comments.filter((c) => {
+    const q = query.toLowerCase();
+    const matchesQuery = !query ||
+      c.text.toLowerCase().includes(q) ||
+      c.author.toLowerCase().includes(q);
+    const matchesCreator = !creatorOnly || c.isCreator;
+    return matchesQuery && matchesCreator;
+  });
 
   function handleSelect(comment) {
-    scrollToCommentInDOM(comment);
+    scrollToComment(comment.element);
   }
 
   // ── Summarise All ────────────────────────────────────────────────────
@@ -150,28 +121,6 @@ export default function SearchPanel({ onClose }) {
         </button>
       </div>
 
-      {/* Tab bar */}
-      <div className="ycs-tab-bar">
-        <button
-          className={`ycs-tab${tab === 'comments' ? ' ycs-tab--active' : ''}`}
-          onClick={() => setTab('comments')}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
-          Comments
-        </button>
-        <button
-          className={`ycs-tab${tab === 'transcript' ? ' ycs-tab--active' : ''}`}
-          onClick={() => setTab('transcript')}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Transcript
-        </button>
-      </div>
-
       {/* Comments tab */}
       {tab === 'comments' && (
         <>
@@ -202,23 +151,15 @@ export default function SearchPanel({ onClose }) {
             onClose={() => setSummaryStatus('idle')}
           />
 
-          {loadError ? (
-            <div className="ycs-empty-state">
-              <p className="ycs-error">{loadError}</p>
-            </div>
-          ) : (
-            <ResultsList
+          <ResultsList
               results={filtered}
               query={query}
               isLoading={isLoading}
               onSelect={handleSelect}
             />
-          )}
         </>
       )}
 
-      {/* Transcript tab */}
-      {tab === 'transcript' && <TranscriptPanel />}
     </div>
   );
 }
