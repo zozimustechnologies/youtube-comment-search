@@ -14,12 +14,12 @@ import CommentResult from './CommentResult.jsx';
  * @param {Function} onSelect      — called with comment when user clicks a result
  */
 export default function ResultsList({ results, query, isLoading, onSelect }) {
-  // Still loading and no results yet
+  // Still indexing and no results yet
   if (isLoading && results.length === 0) {
     return (
       <div className="ycs-empty-state">
         <span className="ycs-spinner ycs-spinner-lg" />
-        <p>Loading comments…</p>
+        <p>Indexing comments…</p>
       </div>
     );
   }
@@ -31,6 +31,7 @@ export default function ResultsList({ results, query, isLoading, onSelect }) {
         {query ? (
           <>
             <p>No comments match <strong>"{query}"</strong></p>
+            <span className="ycs-hint">Try scrolling down to load more comments</span>
           </>
         ) : (
           <>
@@ -38,7 +39,8 @@ export default function ResultsList({ results, query, isLoading, onSelect }) {
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <p>No comments found</p>
+            <p>No comments loaded yet</p>
+            <span className="ycs-hint">Scroll down to load comments</span>
           </>
         )}
       </div>
