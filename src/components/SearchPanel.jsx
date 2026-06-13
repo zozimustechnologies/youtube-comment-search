@@ -151,18 +151,12 @@ export default function SearchPanel({ onClose }) {
             onClose={() => setSummaryStatus('idle')}
           />
 
-          {loadError ? (
-            <div className="ycs-empty-state">
-              <p className="ycs-error">{loadError}</p>
-            </div>
-          ) : (
-            <ResultsList
+          <ResultsList
               results={filtered}
               query={query}
               isLoading={isLoading}
               onSelect={handleSelect}
             />
-          )}
         </>
       )}
 
