@@ -3,20 +3,28 @@
  * Shows the YouTube transcript with live search filtering and click-to-seek.
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchTranscript, formatTime, seekTo, getTranscriptLanguage } from '../utils/transcriptFetcher.js';
+import { loadTranscript, formatTime, seekTo } from '../utils/transcriptFetcher.js';
 
 export default function TranscriptPanel() {
-  const [cues, setCues] = useState(null);        // null = loading, [] = unavailable, [...] = loaded
+  const [cues, setCues] = useState(null);
   const [query, setQuery] = useState('');
   const [lang, setLang] = useState(null);
   const [activeCue, setActiveCue] = useState(null);
+  const [error, setError] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    setLang(getTranscriptLanguage());
-    fetchTranscript().then((result) => {
-      setCues(result ?? []);
-    });
+    async function load() {
+      try {
+        const { language, cues: result } = await loadTranscript();
+        setLang(language);
+        setCues(result);
+      } catch (e) {
+        setError(e.message);
+        setCues([]);
+      }
+    }
+    load();
   }, []);
 
   // Auto-focus search input when panel loads
@@ -69,7 +77,7 @@ export default function TranscriptPanel() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
           <p>No transcript available</p>
-          <span className="ycs-hint">This video may not have captions enabled.</span>
+          <span className="ycs-hint">{error ?? 'This video may not have captions enabled.'}</span>
         </div>
       </div>
     );

@@ -8,8 +8,7 @@ import FilterBar from './FilterBar.jsx';
 import ResultsList from './ResultsList.jsx';
 import SummaryPanel from './SummaryPanel.jsx';
 import TranscriptPanel from './TranscriptPanel.jsx';
-import { scrapeComments, scrollToComment } from '../utils/commentScraper.js';
-import { observeComments } from '../utils/domObserver.js';
+import { fetchComments, scrollToCommentInDOM } from '../utils/commentScraper.js';
 import { checkAvailability, summarizeAll, destroySummarizer } from '../utils/aiSummarizer.js';
 
 export default function SearchPanel({ onClose }) {
@@ -18,6 +17,7 @@ export default function SearchPanel({ onClose }) {
   const [comments, setComments] = useState([]);
   const [creatorOnly, setCreatorOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // AI state
   const [aiAvailability, setAiAvailability] = useState('unsupported'); // 'available'|'downloadable'|'unavailable'|'unsupported'
@@ -29,21 +29,39 @@ export default function SearchPanel({ onClose }) {
 
   const stopObservingRef = useRef(null);
 
-  // Scrape + index comments whenever YouTube loads new ones
-  const refreshComments = useCallback(() => {
-    const scraped = scrapeComments();
-    setComments(scraped);
-    setIsLoading(false);
-  }, []);
-
+  // Load comments from the YouTube API when the panel opens
   useEffect(() => {
+    const videoId = new URLSearchParams(window.location.search).get('v');
+    if (!videoId) {
+      setIsLoading(false);
+      setLoadError('Could not determine the video ID from the URL.');
+      return;
+    }
+
+    let cancelled = false;
     setIsLoading(true);
-    stopObservingRef.current = observeComments(refreshComments);
+    setLoadError('');
+
+    fetchComments(videoId)
+      .then((data) => {
+        if (!cancelled) {
+          setComments(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoadError(err.message || 'Failed to load comments.');
+          setIsLoading(false);
+        }
+      });
+
     return () => {
+      cancelled = true;
       if (stopObservingRef.current) stopObservingRef.current();
-      destroySummarizer(); // free GPU/RAM when panel unmounts
+      destroySummarizer();
     };
-  }, [refreshComments]);
+  }, []);
 
   // Check AI availability once on mount
   useEffect(() => {
@@ -59,18 +77,27 @@ export default function SearchPanel({ onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Filtered results
-  const filtered = comments.filter((c) => {
-    const q = query.toLowerCase();
-    const matchesQuery = !query ||
-      c.text.toLowerCase().includes(q) ||
-      c.author.toLowerCase().includes(q);
-    const matchesCreator = !creatorOnly || c.isCreator;
-    return matchesQuery && matchesCreator;
-  });
+  // Filtered results — top-level comments first (matching YouTube's order),
+  // then replies. Without a search query, replies are hidden entirely since
+  // YouTube also hides them by default.
+  const filtered = comments
+    .filter((c) => {
+      const q = query.toLowerCase();
+      const matchesQuery = !query ||
+        c.text.toLowerCase().includes(q) ||
+        c.author.toLowerCase().includes(q);
+      const matchesCreator = !creatorOnly || c.isCreator;
+      const visibleWithoutQuery = query ? true : !c.isReply;
+      return matchesQuery && matchesCreator && visibleWithoutQuery;
+    })
+    .sort((a, b) => {
+      // Top-level comments before replies
+      if (a.isReply !== b.isReply) return a.isReply ? 1 : -1;
+      return 0; // preserve API relevance order within each group
+    });
 
   function handleSelect(comment) {
-    scrollToComment(comment.element);
+    scrollToCommentInDOM(comment);
   }
 
   // ── Summarise All ────────────────────────────────────────────────────
@@ -175,12 +202,18 @@ export default function SearchPanel({ onClose }) {
             onClose={() => setSummaryStatus('idle')}
           />
 
-          <ResultsList
-            results={filtered}
-            query={query}
-            isLoading={isLoading}
-            onSelect={handleSelect}
-          />
+          {loadError ? (
+            <div className="ycs-empty-state">
+              <p className="ycs-error">{loadError}</p>
+            </div>
+          ) : (
+            <ResultsList
+              results={filtered}
+              query={query}
+              isLoading={isLoading}
+              onSelect={handleSelect}
+            />
+          )}
         </>
       )}
 

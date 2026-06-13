@@ -36,11 +36,19 @@
   ],
 
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "identity",
+    "storage"
   ],
 
+  "oauth2": {
+    "client_id": "432892486848-bemngrqcm4ksjjop6lr8vorbgcfhjurf.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/youtube.force-ssl"]
+  },
+
   "host_permissions": [
-    "https://www.youtube.com/*"
+    "https://www.youtube.com/*",
+    "https://www.googleapis.com/*"
   ],
 
   "web_accessible_resources": [
@@ -48,6 +56,6 @@
       "resources": ["popup/*.js", "popup/*.css", "assets/*"],
       "matches": ["https://www.youtube.com/*"]
     }
-  ],
+  ]
 
 }

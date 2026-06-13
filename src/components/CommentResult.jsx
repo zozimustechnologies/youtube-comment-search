@@ -1,33 +1,34 @@
 /**
  * components/CommentResult.jsx
  * Renders a single search result row with highlighted text.
- * Includes a per-comment AI TL;DR button (hover to reveal).
+ * Comments are loaded from the YouTube Data API v3 (no DOM element reference).
  */
 import React from 'react';
 import { splitWithHighlight } from '../utils/highlighter.js';
 
 /**
  * CommentResult component
- * @param {object}   comment  — { id, text, author, element, isCreator }
+ * @param {object}   comment  — { id, text, author, likeCount, publishedAt, isCreator, isReply }
  * @param {string}   query    — the current search keyword
- * @param {Function} onClick  — called when user clicks this result (scroll to)
+ * @param {Function} onClick  — called when user clicks this result
  */
 export default function CommentResult({ comment, query, onClick }) {
   const parts = splitWithHighlight(comment.text, query);
 
   return (
-    <div className={`ycs-result-item ${comment.isCreator ? 'ycs-creator' : ''}`}>
-      {/* Main clickable area — scrolls to the comment */}
+    <div className={`ycs-result-item ${comment.isCreator ? 'ycs-creator' : ''} ${comment.isReply ? 'ycs-reply' : ''}`}>
       <button
         className="ycs-result-clickable"
         onClick={() => onClick(comment)}
-        title={`Jump to comment by ${comment.author}`}
         aria-label={`Comment by ${comment.author}: ${comment.text}`}
       >
-        {/* Author row — highlight author name if it matches the query */}
+        {/* Author row */}
         <div className="ycs-result-author">
           {comment.isCreator && (
             <span className="ycs-creator-badge" title="Creator reply">★</span>
+          )}
+          {comment.isReply && (
+            <span className="ycs-reply-badge" title="Reply">↩</span>
           )}
           <span className="ycs-author-name">
             {splitWithHighlight(comment.author, query).map((part, i) =>
@@ -38,6 +39,9 @@ export default function CommentResult({ comment, query, onClick }) {
               )
             )}
           </span>
+          {comment.likeCount > 0 && (
+            <span className="ycs-like-count" title="Likes">👍 {comment.likeCount.toLocaleString()}</span>
+          )}
         </div>
 
         {/* Comment text with highlighted matches */}
@@ -51,8 +55,6 @@ export default function CommentResult({ comment, query, onClick }) {
           )}
         </p>
       </button>
-
-
     </div>
   );
 }
