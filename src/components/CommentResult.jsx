@@ -12,14 +12,14 @@ import { splitWithHighlight } from '../utils/highlighter.js';
  * @param {string}   query    — the current search keyword
  * @param {Function} onClick  — called when user clicks this result
  */
-export default function CommentResult({ comment, query, onClick }) {
+export default function CommentResult({ comment, query, onClick, inDOM = true }) {
   const parts = splitWithHighlight(comment.text, query);
 
   return (
-    <div className={`ycs-result-item ${comment.isCreator ? 'ycs-creator' : ''} ${comment.isReply ? 'ycs-reply' : ''}`}>
+    <div className={`ycs-result-item ${comment.isCreator ? 'ycs-creator' : ''} ${comment.isReply ? 'ycs-reply' : ''} ${!inDOM ? 'ycs-not-rendered' : ''}`}>
       <button
         className="ycs-result-clickable"
-        onClick={() => onClick(comment)}
+        onClick={() => inDOM && onClick(comment)}
         aria-label={`Comment by ${comment.author}: ${comment.text}`}
       >
         {/* Author row */}

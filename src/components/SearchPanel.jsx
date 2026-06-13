@@ -2,15 +2,16 @@
  * components/SearchPanel.jsx
  * Main panel orchestrating search, filters, and AI summaries.
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import SearchBar from './SearchBar.jsx';
 import FilterBar from './FilterBar.jsx';
 import ResultsList from './ResultsList.jsx';
 import SummaryPanel from './SummaryPanel.jsx';
-import { fetchComments, scrollToCommentInDOM } from '../utils/commentScraper.js';
+import { fetchComments, scrollToCommentInDOM, buildRenderedSet } from '../utils/commentScraper.js';
 import { checkAvailability, summarizeAll, destroySummarizer } from '../utils/aiSummarizer.js';
 
 export default function SearchPanel({ onClose }) {
+  const [tab, setTab] = useState('comments'); // 'comments' | 'transcript'
   const [query, setQuery] = useState('');
   const [comments, setComments] = useState([]);
   const [creatorOnly, setCreatorOnly] = useState(false);
@@ -26,6 +27,17 @@ export default function SearchPanel({ onClose }) {
   const [summarisedCount, setSummarisedCount] = useState(0);
 
   const stopObservingRef = useRef(null);
+  const [renderedKeys, setRenderedKeys] = useState(() => buildRenderedSet());
+
+  // Watch the YouTube comments section for new renders and rebuild the set
+  useEffect(() => {
+    function refresh() { setRenderedKeys(buildRenderedSet()); }
+    const section = document.querySelector('ytd-comments#comments, #comments');
+    if (!section) return;
+    const obs = new MutationObserver(refresh);
+    obs.observe(section, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, []);
 
   // Load comments from the YouTube API when the panel opens
   useEffect(() => {
@@ -75,7 +87,9 @@ export default function SearchPanel({ onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Filtered results — top-level comments first, replies hidden unless searching
+  // Filtered results — top-level comments first (matching YouTube's order),
+  // then replies. Without a search query, replies are hidden entirely since
+  // YouTube also hides them by default.
   const filtered = comments
     .filter((c) => {
       const q = query.toLowerCase();
@@ -87,8 +101,9 @@ export default function SearchPanel({ onClose }) {
       return matchesQuery && matchesCreator && visibleWithoutQuery;
     })
     .sort((a, b) => {
+      // Top-level comments before replies
       if (a.isReply !== b.isReply) return a.isReply ? 1 : -1;
-      return 0;
+      return 0; // preserve API relevance order within each group
     });
 
   function handleSelect(comment) {
@@ -145,45 +160,50 @@ export default function SearchPanel({ onClose }) {
         </button>
       </div>
 
-      <SearchBar
-        query={query}
-        onQueryChange={setQuery}
-        isLoading={isLoading}
-        matchCount={filtered.length}
-        autoFocus
-      />
+      {/* Comments */}
+      <>
+          <SearchBar
+            query={query}
+            onQueryChange={setQuery}
+            isLoading={isLoading}
+            matchCount={filtered.length}
+            autoFocus
+          />
 
-      <FilterBar
-        creatorOnly={creatorOnly}
-        onCreatorToggle={() => setCreatorOnly((v) => !v)}
-        totalComments={comments.length}
-        aiAvailability={aiAvailability}
-        summaryStatus={summaryStatus}
-        onSummarizeAll={handleSummariseAll}
-      />
+          <FilterBar
+            creatorOnly={creatorOnly}
+            onCreatorToggle={() => setCreatorOnly((v) => !v)}
+            totalComments={comments.length}
+            aiAvailability={aiAvailability}
+            summaryStatus={summaryStatus}
+            onSummarizeAll={handleSummariseAll}
+          />
 
-      {/* AI Summary section — shown when active */}
-      <SummaryPanel
-        status={summaryStatus}
-        summary={summaryText}
-        error={summaryError}
-        progress={summaryProgress}
-        commentCount={summarisedCount}
-        onClose={() => setSummaryStatus('idle')}
-      />
+          {/* AI Summary section — shown when active */}
+          <SummaryPanel
+            status={summaryStatus}
+            summary={summaryText}
+            error={summaryError}
+            progress={summaryProgress}
+            commentCount={summarisedCount}
+            onClose={() => setSummaryStatus('idle')}
+          />
 
-      {loadError ? (
-        <div className="ycs-empty-state">
-          <p className="ycs-error">{loadError}</p>
-        </div>
-      ) : (
-        <ResultsList
-          results={filtered}
-          query={query}
-          isLoading={isLoading}
-          onSelect={handleSelect}
-        />
-      )}
+          {loadError ? (
+            <div className="ycs-empty-state">
+              <p className="ycs-error">{loadError}</p>
+            </div>
+          ) : (
+            <ResultsList
+              results={filtered}
+              query={query}
+              isLoading={isLoading}
+              onSelect={handleSelect}
+              renderedKeys={renderedKeys}
+            />
+          )}
+        </>
+
     </div>
   );
 }
