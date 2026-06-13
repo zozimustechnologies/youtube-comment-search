@@ -74,42 +74,6 @@ async function getToken() {
   return _pendingAuth;
 }
 
-function pickBestTrack(items) {
-  if (!items.length) return null;
-  return (
-    items.find((t) => t.snippet.language === 'en' && t.snippet.trackKind === 'standard') ||
-    items.find((t) => t.snippet.language === 'en') ||
-    items.find((t) => t.snippet.language?.startsWith('en')) ||
-    items[0]
-  );
-}
-
-function parseSrtTime(t) {
-  const [hms, ms] = t.split(',');
-  const [h, m, s] = hms.split(':').map(Number);
-  return h * 3600 + m * 60 + s + (Number(ms) || 0) / 1000;
-}
-
-function parseSrt(srt) {
-  const cues = [];
-  const blocks = srt.trim().split(/\n\s*\n/);
-  for (const block of blocks) {
-    const lines = block.trim().split('\n');
-    if (lines.length < 2) continue;
-    const tcLine = lines.find((l) => l.includes('-->'));
-    if (!tcLine) continue;
-    const [startStr] = tcLine.split('-->');
-    const start = parseSrtTime(startStr.trim());
-    const text = lines
-      .slice(lines.indexOf(tcLine) + 1)
-      .join(' ')
-      .replace(/<[^>]+>/g, '')
-      .trim();
-    if (text) cues.push({ start, text });
-  }
-  return cues;
-}
-
 async function loadCommentsInBackground(videoId) {
   const token = await getToken();
 
@@ -177,32 +141,6 @@ async function loadCommentsInBackground(videoId) {
   return comments;
 }
 
-async function loadTranscriptInBackground(videoId) {
-  const token = await getToken();
-
-  const listRes = await fetch(
-    `${YT_API}/captions?part=snippet&videoId=${encodeURIComponent(videoId)}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!listRes.ok) {
-    const err = await listRes.json().catch(() => ({}));
-    throw new Error(err?.error?.message ?? `captions.list failed (${listRes.status})`);
-  }
-  const listData = await listRes.json();
-  const track = pickBestTrack(listData.items ?? []);
-  if (!track) return { language: null, cues: [] };
-
-  const language = track.snippet?.language ?? null;
-
-  const dlRes = await fetch(
-    `${YT_API}/captions/${encodeURIComponent(track.id)}?tfmt=srt`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!dlRes.ok) throw new Error(`captions.download failed (${dlRes.status})`);
-  const srt = await dlRes.text();
-  return { language, cues: parseSrt(srt) };
-}
-
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_TAB_INFO') {
@@ -214,13 +152,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'LOAD_COMMENTS') {
     loadCommentsInBackground(message.videoId)
-      .then((data) => sendResponse({ data }))
-      .catch((err) => sendResponse({ error: err.message }));
-    return true;
-  }
-
-  if (message.type === 'LOAD_TRANSCRIPT') {
-    loadTranscriptInBackground(message.videoId)
       .then((data) => sendResponse({ data }))
       .catch((err) => sendResponse({ error: err.message }));
     return true;
