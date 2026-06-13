@@ -7,6 +7,7 @@ import SearchBar from './SearchBar.jsx';
 import FilterBar from './FilterBar.jsx';
 import ResultsList from './ResultsList.jsx';
 import SummaryPanel from './SummaryPanel.jsx';
+import TranscriptPanel from './TranscriptPanel.jsx';
 import { scrapeComments, scrollToComment } from '../utils/commentScraper.js';
 import { observeComments } from '../utils/domObserver.js';
 import { checkAvailability, summarizeAll, destroySummarizer } from '../utils/aiSummarizer.js';
@@ -121,6 +122,28 @@ export default function SearchPanel({ onClose }) {
         </button>
       </div>
 
+      {/* Tab bar */}
+      <div className="ycs-tab-bar">
+        <button
+          className={`ycs-tab${tab === 'comments' ? ' ycs-tab--active' : ''}`}
+          onClick={() => setTab('comments')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+          Comments
+        </button>
+        <button
+          className={`ycs-tab${tab === 'transcript' ? ' ycs-tab--active' : ''}`}
+          onClick={() => setTab('transcript')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Transcript
+        </button>
+      </div>
+
       {/* Comments tab */}
       {tab === 'comments' && (
         <>
@@ -159,6 +182,9 @@ export default function SearchPanel({ onClose }) {
             />
         </>
       )}
+
+      {/* Transcript tab */}
+      {tab === 'transcript' && <TranscriptPanel />}
 
     </div>
   );
