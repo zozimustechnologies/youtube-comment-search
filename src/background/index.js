@@ -8,39 +8,6 @@ const SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl';
 const YT_API = 'https://www.googleapis.com/youtube/v3';
 const TOKEN_TTL_MS = 55 * 60 * 1000;
 
-// True on Chrome; false on Edge and other Chromium browsers that don't support getAuthToken.
-const supportsGetAuthToken = typeof chrome.identity?.getAuthToken === 'function';
-
-// ── Chrome path: chrome.identity.getAuthToken ────────────────────────────
-// Chrome natively persists the token across service worker restarts (fixes Issue #17).
-
-async function getTokenChrome(interactive = true) {
-  return new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive, scopes: [SCOPE] }, (token) => {
-      if (chrome.runtime.lastError || !token) {
-        reject(new Error(chrome.runtime.lastError?.message ?? 'Auth failed'));
-        return;
-      }
-      resolve(token);
-    });
-  });
-}
-
-async function clearTokenChrome() {
-  return new Promise((resolve) => {
-    chrome.identity.getAuthToken({ interactive: false, scopes: [SCOPE] }, (token) => {
-      if (token) {
-        chrome.identity.removeCachedAuthToken({ token }, resolve);
-      } else {
-        resolve();
-      }
-    });
-  });
-}
-
-// ── Fallback path: launchWebAuthFlow (Edge + other Chromium browsers) ─────
-// Tokens are cached in chrome.storage.session (survives service worker idle restarts).
-
 let _cachedToken = null;
 let _tokenExpiry = 0;
 let _pendingAuth = null;
@@ -86,7 +53,7 @@ async function fetchNewToken() {
   });
 }
 
-async function getTokenFallback() {
+async function getToken() {
   const cached = await getCachedToken();
   if (cached) return cached;
   if (_pendingAuth) return _pendingAuth;
@@ -105,26 +72,6 @@ async function getTokenFallback() {
   });
 
   return _pendingAuth;
-}
-
-function clearTokenFallback() {
-  _cachedToken = null;
-  _tokenExpiry = 0;
-  _pendingAuth = null;
-  if (chrome.storage?.session) {
-    chrome.storage.session.remove('ytAuthToken').catch(() => {});
-  }
-}
-
-// ── Unified entry points ──────────────────────────────────────────────────
-
-async function getToken(interactive = true) {
-  return supportsGetAuthToken ? getTokenChrome(interactive) : getTokenFallback();
-}
-
-async function clearToken() {
-  if (supportsGetAuthToken) return clearTokenChrome();
-  clearTokenFallback();
 }
 
 async function loadCommentsInBackground(videoId) {
@@ -211,9 +158,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'CLEAR_AUTH_TOKEN') {
-    clearToken().then(() => sendResponse({ ok: true }));
+    _cachedToken = null;
+    _tokenExpiry = 0;
+    _pendingAuth = null;
+    if (chrome.storage?.session) {
+      chrome.storage.session.remove('ytAuthToken').catch(() => {});
+    }
+    sendResponse({ ok: true });
     return true;
   }
 });
-
 
