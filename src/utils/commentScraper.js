@@ -85,7 +85,7 @@ export function scrollToCommentInDOM(comment) {
     return;
   }
 
-  // 2. Scroll to the comments section first to wake up YouTube's lazy loader
+  // 2. Jump to the comments section so YouTube starts rendering comment nodes
   const section = document.querySelector(COMMENTS_SECTION);
   if (section) {
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -100,35 +100,36 @@ export function scrollToCommentInDOM(comment) {
     interval = null;
   }
 
-  // 3. Each tick: scroll to the last rendered comment to nudge YouTube's
-  //    virtual scroller, then check if the target node has appeared.
-  //    Abort if the user scrolled UP (scrollY dropped by >50px since last tick).
+  // 3. Each tick:
+  //    a) Abort if the user scrolled UP (page position dropped >80px vs last tick)
+  //    b) Scroll to the very bottom of the page — this reliably hits YouTube's
+  //       #continuations sentinel which triggers loading of the next batch of
+  //       comment nodes (targeting the last comment node was stopping short)
+  //    c) Check whether the target node has now been rendered
   interval = setInterval(() => {
     const currentScrollY = window.scrollY;
-    if (currentScrollY < prevScrollY - 50) {
-      // User scrolled up — hand control back to them
+
+    if (currentScrollY < prevScrollY - 80) {
       stop();
       return;
     }
     prevScrollY = currentScrollY;
 
-    // Scroll to the bottom of the last rendered comment to load more
-    const allNodes = document.querySelectorAll(COMMENT_SELECTOR);
-    if (allNodes.length > 0) {
-      allNodes[allNodes.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
+    // Scroll to the true page bottom to trigger YouTube's virtual scroller
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 
-    // Check if the target is now in the DOM
+    // Check after scrolling
     const found = findCommentNode(comment);
     if (found) {
       stop();
+      // Let the current smooth scroll settle before jumping to the target
       setTimeout(() => {
         found.scrollIntoView({ behavior: 'smooth', block: 'center' });
         highlightNode(found);
-      }, 600);
+      }, 700);
       return;
     }
 
-    if (++attempts >= 25) stop();
-  }, 800);
+    if (++attempts >= 40) stop();
+  }, 900);
 }
