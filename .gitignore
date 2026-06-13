@@ -19,13 +19,6 @@ npm-debug.log*
 .vscode/
 copilot-instructions.md
 
-# Zip artifacts
-*.zip
-
 # Store assets generation script (dev only)
 generate-store-assets.js
 store-assets/
-
-# Version cache folders
-v*.* - cache/
-
