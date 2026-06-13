@@ -1,2 +1,31 @@
-copilot-instructions.md
+# macOS
 .DS_Store
+
+# Dependencies
+node_modules/
+
+# Build output (keep dist/ tracked for the extension)
+# dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Editor
+.vscode/
+copilot-instructions.md
+
+# Zip artifacts
+*.zip
+
+# Store assets generation script (dev only)
+generate-store-assets.js
+store-assets/
+
+# Version cache folders
+v*.* - cache/
+
