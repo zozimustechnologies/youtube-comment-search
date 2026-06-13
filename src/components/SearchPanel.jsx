@@ -2,21 +2,20 @@
  * components/SearchPanel.jsx
  * Main panel orchestrating search, filters, and AI summaries.
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SearchBar from './SearchBar.jsx';
 import FilterBar from './FilterBar.jsx';
 import ResultsList from './ResultsList.jsx';
 import SummaryPanel from './SummaryPanel.jsx';
-import { scrapeComments, scrollToComment } from '../utils/commentScraper.js';
-import { observeComments } from '../utils/domObserver.js';
+import { fetchComments, scrollToCommentInDOM } from '../utils/commentScraper.js';
 import { checkAvailability, summarizeAll, destroySummarizer } from '../utils/aiSummarizer.js';
 
 export default function SearchPanel({ onClose }) {
-  const [tab, setTab] = useState('comments');
   const [query, setQuery] = useState('');
   const [comments, setComments] = useState([]);
   const [creatorOnly, setCreatorOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // AI state
   const [aiAvailability, setAiAvailability] = useState('unsupported'); // 'available'|'downloadable'|'unavailable'|'unsupported'
@@ -28,21 +27,39 @@ export default function SearchPanel({ onClose }) {
 
   const stopObservingRef = useRef(null);
 
-  // Scrape + index comments whenever YouTube loads new ones
-  const refreshComments = useCallback(() => {
-    const scraped = scrapeComments();
-    setComments(scraped);
-    setIsLoading(false);
-  }, []);
-
+  // Load comments from the YouTube API when the panel opens
   useEffect(() => {
+    const videoId = new URLSearchParams(window.location.search).get('v');
+    if (!videoId) {
+      setIsLoading(false);
+      setLoadError('Could not determine the video ID from the URL.');
+      return;
+    }
+
+    let cancelled = false;
     setIsLoading(true);
-    stopObservingRef.current = observeComments(refreshComments);
+    setLoadError('');
+
+    fetchComments(videoId)
+      .then((data) => {
+        if (!cancelled) {
+          setComments(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoadError(err.message || 'Failed to load comments.');
+          setIsLoading(false);
+        }
+      });
+
     return () => {
+      cancelled = true;
       if (stopObservingRef.current) stopObservingRef.current();
       destroySummarizer();
     };
-  }, [refreshComments]);
+  }, []);
 
   // Check AI availability once on mount
   useEffect(() => {
@@ -58,17 +75,24 @@ export default function SearchPanel({ onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const filtered = comments.filter((c) => {
-    const q = query.toLowerCase();
-    const matchesQuery = !query ||
-      c.text.toLowerCase().includes(q) ||
-      c.author.toLowerCase().includes(q);
-    const matchesCreator = !creatorOnly || c.isCreator;
-    return matchesQuery && matchesCreator;
-  });
+  // Filtered results — top-level comments first, replies hidden unless searching
+  const filtered = comments
+    .filter((c) => {
+      const q = query.toLowerCase();
+      const matchesQuery = !query ||
+        c.text.toLowerCase().includes(q) ||
+        c.author.toLowerCase().includes(q);
+      const matchesCreator = !creatorOnly || c.isCreator;
+      const visibleWithoutQuery = query ? true : !c.isReply;
+      return matchesQuery && matchesCreator && visibleWithoutQuery;
+    })
+    .sort((a, b) => {
+      if (a.isReply !== b.isReply) return a.isReply ? 1 : -1;
+      return 0;
+    });
 
   function handleSelect(comment) {
-    scrollToComment(comment.element);
+    scrollToCommentInDOM(comment);
   }
 
   // ── Summarise All ────────────────────────────────────────────────────
@@ -121,45 +145,45 @@ export default function SearchPanel({ onClose }) {
         </button>
       </div>
 
-      {/* Comments tab */}
-      {tab === 'comments' && (
-        <>
-          <SearchBar
-            query={query}
-            onQueryChange={setQuery}
-            isLoading={isLoading}
-            matchCount={filtered.length}
-            autoFocus
-          />
+      <SearchBar
+        query={query}
+        onQueryChange={setQuery}
+        isLoading={isLoading}
+        matchCount={filtered.length}
+        autoFocus
+      />
 
-          <FilterBar
-            creatorOnly={creatorOnly}
-            onCreatorToggle={() => setCreatorOnly((v) => !v)}
-            totalComments={comments.length}
-            aiAvailability={aiAvailability}
-            summaryStatus={summaryStatus}
-            onSummarizeAll={handleSummariseAll}
-          />
+      <FilterBar
+        creatorOnly={creatorOnly}
+        onCreatorToggle={() => setCreatorOnly((v) => !v)}
+        totalComments={comments.length}
+        aiAvailability={aiAvailability}
+        summaryStatus={summaryStatus}
+        onSummarizeAll={handleSummariseAll}
+      />
 
-          {/* AI Summary section — shown when active */}
-          <SummaryPanel
-            status={summaryStatus}
-            summary={summaryText}
-            error={summaryError}
-            progress={summaryProgress}
-            commentCount={summarisedCount}
-            onClose={() => setSummaryStatus('idle')}
-          />
+      {/* AI Summary section — shown when active */}
+      <SummaryPanel
+        status={summaryStatus}
+        summary={summaryText}
+        error={summaryError}
+        progress={summaryProgress}
+        commentCount={summarisedCount}
+        onClose={() => setSummaryStatus('idle')}
+      />
 
-          <ResultsList
-              results={filtered}
-              query={query}
-              isLoading={isLoading}
-              onSelect={handleSelect}
-            />
-        </>
+      {loadError ? (
+        <div className="ycs-empty-state">
+          <p className="ycs-error">{loadError}</p>
+        </div>
+      ) : (
+        <ResultsList
+          results={filtered}
+          query={query}
+          isLoading={isLoading}
+          onSelect={handleSelect}
+        />
       )}
-
     </div>
   );
 }
