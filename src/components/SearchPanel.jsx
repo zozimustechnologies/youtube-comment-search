@@ -7,16 +7,16 @@ import SearchBar from './SearchBar.jsx';
 import FilterBar from './FilterBar.jsx';
 import ResultsList from './ResultsList.jsx';
 import SummaryPanel from './SummaryPanel.jsx';
-import { scrapeComments, scrollToComment } from '../utils/commentScraper.js';
-import { observeComments } from '../utils/domObserver.js';
+import { fetchComments, scrollToCommentInDOM, buildRenderedSet } from '../utils/commentScraper.js';
 import { checkAvailability, summarizeAll, destroySummarizer } from '../utils/aiSummarizer.js';
 
 export default function SearchPanel({ onClose }) {
-  const [tab, setTab] = useState('comments');
+  const [tab, setTab] = useState('comments'); // 'comments' | 'transcript'
   const [query, setQuery] = useState('');
   const [comments, setComments] = useState([]);
   const [creatorOnly, setCreatorOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // AI state
   const [aiAvailability, setAiAvailability] = useState('unsupported'); // 'available'|'downloadable'|'unavailable'|'unsupported'
@@ -27,22 +27,51 @@ export default function SearchPanel({ onClose }) {
   const [summarisedCount, setSummarisedCount] = useState(0);
 
   const stopObservingRef = useRef(null);
+  const [renderedKeys, setRenderedKeys] = useState(() => buildRenderedSet());
 
-  // Scrape + index comments whenever YouTube loads new ones
-  const refreshComments = useCallback(() => {
-    const scraped = scrapeComments();
-    setComments(scraped);
-    setIsLoading(false);
+  // Watch the YouTube comments section for new renders and rebuild the set
+  useEffect(() => {
+    function refresh() { setRenderedKeys(buildRenderedSet()); }
+    const section = document.querySelector('ytd-comments#comments, #comments');
+    if (!section) return;
+    const obs = new MutationObserver(refresh);
+    obs.observe(section, { childList: true, subtree: true });
+    return () => obs.disconnect();
   }, []);
 
+  // Load comments from the YouTube API when the panel opens
   useEffect(() => {
+    const videoId = new URLSearchParams(window.location.search).get('v');
+    if (!videoId) {
+      setIsLoading(false);
+      setLoadError('Could not determine the video ID from the URL.');
+      return;
+    }
+
+    let cancelled = false;
     setIsLoading(true);
-    stopObservingRef.current = observeComments(refreshComments);
+    setLoadError('');
+
+    fetchComments(videoId)
+      .then((data) => {
+        if (!cancelled) {
+          setComments(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoadError(err.message || 'Failed to load comments.');
+          setIsLoading(false);
+        }
+      });
+
     return () => {
+      cancelled = true;
       if (stopObservingRef.current) stopObservingRef.current();
       destroySummarizer();
     };
-  }, [refreshComments]);
+  }, []);
 
   // Check AI availability once on mount
   useEffect(() => {
@@ -58,17 +87,27 @@ export default function SearchPanel({ onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const filtered = comments.filter((c) => {
-    const q = query.toLowerCase();
-    const matchesQuery = !query ||
-      c.text.toLowerCase().includes(q) ||
-      c.author.toLowerCase().includes(q);
-    const matchesCreator = !creatorOnly || c.isCreator;
-    return matchesQuery && matchesCreator;
-  });
+  // Filtered results — top-level comments first (matching YouTube's order),
+  // then replies. Without a search query, replies are hidden entirely since
+  // YouTube also hides them by default.
+  const filtered = comments
+    .filter((c) => {
+      const q = query.toLowerCase();
+      const matchesQuery = !query ||
+        c.text.toLowerCase().includes(q) ||
+        c.author.toLowerCase().includes(q);
+      const matchesCreator = !creatorOnly || c.isCreator;
+      const visibleWithoutQuery = query ? true : !c.isReply;
+      return matchesQuery && matchesCreator && visibleWithoutQuery;
+    })
+    .sort((a, b) => {
+      // Top-level comments before replies
+      if (a.isReply !== b.isReply) return a.isReply ? 1 : -1;
+      return 0; // preserve API relevance order within each group
+    });
 
   function handleSelect(comment) {
-    scrollToComment(comment.element);
+    scrollToCommentInDOM(comment);
   }
 
   // ── Summarise All ────────────────────────────────────────────────────
@@ -121,9 +160,8 @@ export default function SearchPanel({ onClose }) {
         </button>
       </div>
 
-      {/* Comments tab */}
-      {tab === 'comments' && (
-        <>
+      {/* Comments */}
+      <>
           <SearchBar
             query={query}
             onQueryChange={setQuery}
@@ -151,14 +189,20 @@ export default function SearchPanel({ onClose }) {
             onClose={() => setSummaryStatus('idle')}
           />
 
-          <ResultsList
+          {loadError ? (
+            <div className="ycs-empty-state">
+              <p className="ycs-error">{loadError}</p>
+            </div>
+          ) : (
+            <ResultsList
               results={filtered}
               query={query}
               isLoading={isLoading}
               onSelect={handleSelect}
+              renderedKeys={renderedKeys}
             />
+          )}
         </>
-      )}
 
     </div>
   );

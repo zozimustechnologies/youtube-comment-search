@@ -13,7 +13,7 @@ import CommentResult from './CommentResult.jsx';
  * @param {boolean}  isLoading     — comments still being indexed
  * @param {Function} onSelect      — called with comment when user clicks a result
  */
-export default function ResultsList({ results, query, isLoading, onSelect }) {
+export default function ResultsList({ results, query, isLoading, onSelect, renderedKeys }) {
   // Still indexing and no results yet
   if (isLoading && results.length === 0) {
     return (
@@ -55,6 +55,7 @@ export default function ResultsList({ results, query, isLoading, onSelect }) {
             comment={comment}
             query={query}
             onClick={onSelect}
+            inDOM={!renderedKeys || renderedKeys.size === 0 || renderedKeys.has(`${comment.author.toLowerCase().replace(/\s+/g, ' ').trim()}::${comment.text.toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 80)}`)}
           />
         </li>
       ))}

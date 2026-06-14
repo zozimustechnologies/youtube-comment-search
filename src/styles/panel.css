@@ -540,6 +540,10 @@ html[dark] .ycs-summary-error {
   background: var(--ycs-bg-secondary);
 }
 
+.ycs-result-item.ycs-not-rendered .ycs-result-clickable {
+  cursor: default;
+}
+
 /* The scroll-to clickable area inside the result */
 .ycs-result-clickable {
   display: block;
