@@ -10,19 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Create zip
+      - name: Create extension zip
         run: |
           zip -r extension.zip . \
             -x ".git/*" \
             -x ".github/*" \
             -x "node_modules/*"
 
-      - name: Upload to Edge
+      - name: Upload package to Edge
         run: |
-          curl -X POST \
-            "https://api.addons.microsoftedge.microsoft.com/v1/products/${{ secrets.EDGE_PRODUCT_ID }}/submissions/draft/package" \
+          curl \
             -H "Authorization: ApiKey ${{ secrets.EDGE_API_KEY }}" \
             -H "X-ClientID: ${{ secrets.EDGE_CLIENT_ID }}" \
-            -F "file=@extension.zip"
+            -H "Content-Type: application/zip" \
+            -X POST \
+            -T extension.zip \
+            -v \
+            "https://api.addons.microsoftedge.microsoft.com/v1/products/${{ secrets.EDGE_PRODUCT_ID }}/submissions/draft/package"
+
+      - name: Wait for processing
+        run: sleep 60
+
+      - name: Publish submission
+        run: |
+          curl \
+            -H "Authorization: ApiKey ${{ secrets.EDGE_API_KEY }}" \
+            -H "X-ClientID: ${{ secrets.EDGE_CLIENT_ID }}" \
+            -X POST \
+            -v \
+            "https://api.addons.microsoftedge.microsoft.com/v1/products/${{ secrets.EDGE_PRODUCT_ID }}/submissions"
