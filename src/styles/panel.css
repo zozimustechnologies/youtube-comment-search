@@ -59,6 +59,11 @@ html[dark] {
 }
 
 /* ─── Panel Container ────────────────────────────────────────────────── */
+#ycs-root-container {
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .ycs-panel {
   font-family: var(--ycs-font);
   background: var(--ycs-bg);
@@ -257,6 +262,7 @@ html[dark] {
   margin: 0;
   padding: 0;
   max-height: 400px;
+  overflow-x: hidden;
   overflow-y: auto;
   /* Custom scrollbar */
   scrollbar-width: thin;
@@ -308,6 +314,7 @@ html[dark] {
   font-size: 13px;
   color: var(--ycs-text);
   line-height: 1.5;
+  word-break: break-word;
   /* Clamp to 3 lines to keep results compact */
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -532,6 +539,7 @@ html[dark] .ycs-summary-error {
   width: 100%;
   background: none;
   border: none;
+  overflow: hidden;
   font-family: var(--ycs-font);
   transition: background 0.12s;
 }
@@ -544,6 +552,7 @@ html[dark] .ycs-summary-error {
 .ycs-result-clickable {
   display: block;
   width: 100%;
+  box-sizing: border-box;
   text-align: left;
   background: none;
   border: none;
