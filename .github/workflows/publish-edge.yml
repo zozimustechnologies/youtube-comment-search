@@ -22,7 +22,7 @@ jobs:
 
       - name: Upload package to Edge
         run: |
-          curl \
+          curl --fail-with-body \
             -H "Authorization: ApiKey ${{ secrets.EDGE_API_KEY }}" \
             -H "X-ClientID: ${{ secrets.EDGE_CLIENT_ID }}" \
             -H "Content-Type: application/zip" \
@@ -36,9 +36,10 @@ jobs:
 
       - name: Publish submission
         run: |
-          curl \
+          curl --fail-with-body \
             -H "Authorization: ApiKey ${{ secrets.EDGE_API_KEY }}" \
             -H "X-ClientID: ${{ secrets.EDGE_CLIENT_ID }}" \
+            -H "Content-Length: 0" \
             -X POST \
             -v \
             "https://api.addons.microsoftedge.microsoft.com/v1/products/${{ secrets.EDGE_PRODUCT_ID }}/submissions"
